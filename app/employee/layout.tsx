@@ -1,7 +1,7 @@
 import SignOutButton from '@/components/SignOutButton';
 import { requireAuth } from '@/lib/session';
 import { redirect } from 'next/navigation';
-import { APP_NAME } from '@/lib/brand';
+import Link from 'next/link';
 
 export default async function EmployeeLayout({ children }: { children: React.ReactNode }) {
   const session = await requireAuth();
@@ -9,12 +9,16 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-5xl space-y-6 p-4 md:p-6">
-      <div className="panel flex items-center justify-between">
+      <div className="flex items-center justify-between panel">
         <div>
-          <p className="text-sm text-slate-500">{APP_NAME}</p>
+          <p className="text-sm text-slate-500">Employee Portal</p>
           <p className="font-semibold">{session.user.name}</p>
         </div>
-        <SignOutButton />
+        <div className="flex gap-4 items-center">
+          <Link href="/employee/payslips" className="text-slate-600 hover:text-slate-900">Payslips</Link>
+          <Link href="/employee/leaves" className="text-slate-600 hover:text-slate-900">Leaves</Link>
+          <SignOutButton />
+        </div>
       </div>
       {children}
     </div>

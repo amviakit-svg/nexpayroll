@@ -37,6 +37,14 @@ model User {
   role            Role                     @default(EMPLOYEE)
   isActive        Boolean                  @default(true)
   managerId       String?
+  pan             String?
+  dateOfJoining   DateTime?
+  designation     String?
+  pfNumber        String?
+  employeeCode    String?                  @unique
+  bankName        String?
+  accountNumber   String?
+  ifscCode        String?
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 
