@@ -1,0 +1,17 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:16
+    container_name: salary_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: salary_mvp
+    ports:
+      - "5432:5432"
+    volumes:
+      - salary_pg_data:/var/lib/postgresql/data
+
+volumes:
+  salary_pg_data:

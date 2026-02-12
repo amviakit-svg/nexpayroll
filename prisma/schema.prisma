@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum ComponentType {
+  EARNING
+  DEDUCTION
+}
+
+enum PayrollStatus {
+  DRAFT
+  SUBMITTED
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model User {
+  id              String                   @id @default(cuid())
+  name            String
+  email           String                   @unique
+  passwordHash    String
+  role            Role                     @default(EMPLOYEE)
+  isActive        Boolean                  @default(true)
+  managerId       String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  componentValues EmployeeComponentValue[]
+  payrollEntries  PayrollEntry[]
+  manager         User?                    @relation("ManagerRelation", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports   User[]                   @relation("ManagerRelation")
+  leaveRequests   LeaveRequest[]           @relation("EmployeeLeaves")
+  approvedLeaves  LeaveRequest[]           @relation("ApprovedLeaves")
+  leaveBalances   EmployeeBalance[]
+}
+
+model SalaryComponent {
+  id           String                   @id @default(cuid())
+  name         String                   @unique
+  type         ComponentType
+  isVariable   Boolean                  @default(false)
+  isActive     Boolean                  @default(true)
+  createdAt    DateTime                 @default(now())
+
+  assignments  EmployeeComponentValue[]
+  lineItems    PayrollLineItem[]
+}
+
+model EmployeeComponentValue {
+  id           String          @id @default(cuid())
+  employeeId   String
+  componentId  String
+  amount       Decimal         @db.Decimal(10, 2)
+  isActive     Boolean         @default(true)
+
+  employee     User            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  component    SalaryComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, componentId])
+}
+
+model PayrollCycle {
+  id            String          @id @default(cuid())
+  year          Int
+  month         Int
+  status        PayrollStatus   @default(DRAFT)
+  submittedAt   DateTime?
+  createdById   String
+  createdAt     DateTime        @default(now())
+
+  entries       PayrollEntry[]
+
+  @@unique([year, month])
+}
+
+model PayrollEntry {
+  id                String           @id @default(cuid())
+  payrollCycleId    String
+  employeeId        String
+  leaves            Int              @default(0)
+  workingDays       Int
+  grossEarnings     Decimal          @db.Decimal(10, 2)
+  totalDeductions   Decimal          @db.Decimal(10, 2)
+  netMonthlySalary  Decimal          @db.Decimal(10, 2)
+  finalPayable      Decimal          @db.Decimal(10, 2)
+  payslipPath       String?
+
+  payrollCycle      PayrollCycle     @relation(fields: [payrollCycleId], references: [id], onDelete: Cascade)
+  employee          User             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  lineItems         PayrollLineItem[]
+
+  @@unique([payrollCycleId, employeeId])
+}
+
+model PayrollLineItem {
+  id                     String           @id @default(cuid())
+  payrollEntryId         String
+  componentId            String?
+  componentNameSnapshot  String
+  componentTypeSnapshot  ComponentType
+  amount                 Decimal          @db.Decimal(10, 2)
+  isVariableAdjustment   Boolean          @default(false)
+
+  payrollEntry           PayrollEntry     @relation(fields: [payrollEntryId], references: [id], onDelete: Cascade)
+  component              SalaryComponent? @relation(fields: [componentId], references: [id], onDelete: SetNull)
+}
+
+// Leave Management Models
+model LeaveType {
+  id          String         @id @default(cuid())
+  name        String         @unique
+  color       String         @default("#3B82F6")
+  description String?
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+
+  leaveRequests LeaveRequest[]
+  balances      EmployeeBalance[]
+}
+
+model Holiday {
+  id        String   @id @default(cuid())
+  name      String
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  @@unique([date])
+}
+
+model LeaveRequest {
+  id             String     @id @default(cuid())
+  employeeId     String
+  leaveTypeId    String
+  startDate      DateTime   @db.Date
+  endDate        DateTime   @db.Date
+  daysRequested  Int
+  status         LeaveStatus @default(PENDING)
+  reason         String?
+  approverId     String?
+  requestedAt    DateTime   @default(now())
+  approvedAt     DateTime?
+  comments       String?
+
+  employee       User       @relation("EmployeeLeaves", fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType      LeaveType  @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  approver       User?      @relation("ApprovedLeaves", fields: [approverId], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, status])
+  @@index([startDate, endDate])
+}
+
+model EmployeeBalance {
+  id          String    @id @default(cuid())
+  employeeId  String
+  leaveTypeId String
+  year        Int
+  month       Int
+  balanceDays Int
+
+  employee    User      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, leaveTypeId, year, month])
+  @@index([employeeId, year, month])
+}

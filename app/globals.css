@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+
+  h1 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+
+  h2 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+
+  h3 {
+    @apply text-lg font-semibold;
+  }
+
+  input,
+  select {
+    @apply h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200;
+  }
+
+  button {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm;
+  }
+
+  .btn-primary {
+    @apply bg-slate-900 text-white hover:bg-slate-700;
+  }
+
+  .btn-secondary {
+    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-100;
+  }
+
+  .btn-success {
+    @apply bg-emerald-600 text-white hover:bg-emerald-500;
+  }
+
+  .btn-warning {
+    @apply bg-amber-500 text-white hover:bg-amber-400;
+  }
+
+  .input-label {
+    @apply mb-1 block text-sm font-medium text-slate-700;
+  }
+}

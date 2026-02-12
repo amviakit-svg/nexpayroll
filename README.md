@@ -1,0 +1,81 @@
+# NexPayroll
+
+Payroll app with:
+- Next.js 14 + TypeScript + Tailwind
+- PostgreSQL + Prisma
+- NextAuth Credentials login
+- Admin + Employee roles
+
+## Features
+
+### Admin
+- Manage users (add/edit/deactivate) for both `ADMIN` and `EMPLOYEE`
+- Reset/change user passwords
+- Manage salary components (earning/deduction)
+  - Supports both fixed components and `Variable pay/adjustment` components
+- Assign fixed component amount per employee
+- Run monthly payroll cycle with per-employee inputs:
+  - Leave days
+  - `Variable pay/adjustment` values per variable component
+  - Variable values default to `0` when not entered
+- Review summary before submit (fixed + variable earnings/deductions + net + final payable)
+- Submit payroll and lock cycle/month (`SUBMITTED`)
+  - Locked month blocks edits to leaves and variable adjustments
+- Payslip PDFs auto-generated on submit
+
+### Employee
+- Login with own credentials
+- View submitted payslips
+- Download payslip PDF
+
+## Payroll Formula
+- `netMonthly = (fixed earnings + variable earnings) - (fixed deductions + variable deductions)`
+- `finalPayable = (netMonthly / 30) * (30 - leaves)`
+
+## Local Setup
+
+### 1) Start PostgreSQL
+```bash
+docker compose up -d
+```
+
+### 2) Install dependencies
+```bash
+npm install
+```
+
+### 3) Configure env
+```bash
+cp .env.example .env
+```
+Set a strong `NEXTAUTH_SECRET`.
+
+### 4) Run migrations + seed
+```bash
+npx prisma migrate dev
+npm run prisma:seed
+```
+
+### 5) Start app
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000`
+
+## Seeded First Admin
+- Email: `admin@local.test`
+- Password: `Admin@123`
+
+## Important Routes
+- `/login`
+- `/admin/employees`
+- `/admin/components`
+- `/admin/assignments`
+- `/admin/payroll`
+- `/employee/payslips`
+
+## Notes
+- Submitted payroll month is locked.
+- Payroll snapshots include line-item names/types and variable-adjustment flags for stable historical payslips.
+- Payslip PDFs are generated in `public/payslips/`.
