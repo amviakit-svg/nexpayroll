@@ -37,6 +37,12 @@ async function main() {
                     where: { userId: entry.employee.id, year: cycle.year }
                 });
 
+                // Calculate earnings and deductions from line items
+                const fixedEarnings = entry.lineItems.filter(i => i.componentTypeSnapshot === 'EARNING' && !i.isVariableAdjustment).reduce((acc, i) => acc + Number(i.amount), 0);
+                const variableEarnings = entry.lineItems.filter(i => i.componentTypeSnapshot === 'EARNING' && i.isVariableAdjustment).reduce((acc, i) => acc + Number(i.amount), 0);
+                const fixedDeductions = entry.lineItems.filter(i => i.componentTypeSnapshot === 'DEDUCTION' && !i.isVariableAdjustment).reduce((acc, i) => acc + Number(i.amount), 0);
+                const variableDeductions = entry.lineItems.filter(i => i.componentTypeSnapshot === 'DEDUCTION' && i.isVariableAdjustment).reduce((acc, i) => acc + Number(i.amount), 0);
+
                 const filePath = path.join(process.cwd(), 'public', 'payslips', `${cycle.year}-${cycle.month}-${entry.employee.id}.pdf`);
 
                 // Calculate totals for tax projection
@@ -45,7 +51,7 @@ async function main() {
                 const total80C = declarations.filter(d => d.category === '80C').reduce((acc, d) => acc + Number(d.amount || 0), 0);
                 const total80D = declarations.filter(d => d.category === '80D').reduce((acc, d) => acc + Number(d.amount || 0), 0);
                 const hraExemption = declarations.filter(d => d.category === 'HRA').reduce((acc, d) => acc + Number(d.amount || 0), 0);
-                const taxableIncome = Math.max(0, annualGross - standardDeduction - (Number(entry.fixedDeductions) * 12) - total80C - total80D - hraExemption);
+                const taxableIncome = Math.max(0, annualGross - standardDeduction - (fixedDeductions * 12) - total80C - total80D - hraExemption);
 
                 const payslipData = {
                     companyName: config?.companyName,
@@ -74,10 +80,10 @@ async function main() {
                     year: cycle.year,
                     leaves: entry.leaves,
                     workingDays: entry.workingDays,
-                    fixedEarnings: Number(entry.fixedEarnings),
-                    variableEarnings: Number(entry.variableEarnings),
-                    fixedDeductions: Number(entry.fixedDeductions),
-                    variableDeductions: Number(entry.variableDeductions),
+                    fixedEarnings,
+                    variableEarnings,
+                    fixedDeductions,
+                    variableDeductions,
                     grossEarnings: Number(entry.grossEarnings),
                     totalDeductions: Number(entry.totalDeductions),
                     netMonthlySalary: Number(entry.netMonthlySalary),
@@ -89,6 +95,7 @@ async function main() {
                     total80D,
                     taxableIncome,
                     taxPayable: 0,
+                    taxProjection: [], // Added to satisfy potential runtime checks
 
                     items: entry.lineItems.map(item => ({
                         name: item.componentNameSnapshot,
