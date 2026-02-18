@@ -52,6 +52,7 @@ type PayslipData = {
   total80D?: number;
   taxableIncome?: number;
   taxPayable?: number;
+  taxProjection?: { label: string; value: number }[];
 
   items: LineItem[];
 };
