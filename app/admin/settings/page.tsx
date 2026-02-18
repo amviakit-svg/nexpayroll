@@ -154,12 +154,14 @@ export default async function SettingsPage() {
                 </form>
             </div>
 
-            <div className="panel bg-blue-50 border-blue-100">
-                <h2 className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-2">Internal Note</h2>
-                <p className="text-sm text-blue-700">
-                    Changes to company settings will apply to <strong>future</strong> payslips.
-                    Already generated PDFs will keep the old company information unless you regenerate them.
-                </p>
+            <div className="panel bg-blue-50 border-blue-100 flex items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-1">System & Infrastructure</h2>
+                    <p className="text-xs text-blue-700">Manage database backups, migrations, and system synchronization.</p>
+                </div>
+                <a href="/admin/settings/maintenance" className="whitespace-nowrap bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-800 transition-all shadow-lg shadow-blue-200">
+                    Maintenance Hub
+                </a>
             </div>
         </div>
     );
