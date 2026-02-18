@@ -1,36 +1,68 @@
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
+import { ComponentType } from '@prisma/client';
+import { redirect } from 'next/navigation';
 
 async function addComponent(formData: FormData) {
   'use server';
-  await requireAdmin();
-  const name = String(formData.get('name'));
-  const type = String(formData.get('type')) as 'EARNING' | 'DEDUCTION';
-  const isVariable = String(formData.get('isVariable')) === 'on';
-  if (!name) return;
-  await prisma.salaryComponent.create({ data: { name, type, isVariable } });
-  revalidatePath('/admin/components');
+  try {
+    await requireAdmin();
+    const name = String(formData.get('name')).trim();
+    const type = String(formData.get('type')) as ComponentType;
+    const isVariable = formData.get('isVariable') === 'on';
+
+    if (!name) return;
+
+    await prisma.salaryComponent.create({
+      data: { name, type, isVariable }
+    });
+    revalidatePath('/admin/components');
+  } catch (error) {
+    console.error('[addComponent] Error:', error);
+    throw error;
+  }
+  redirect('/admin/components?success=true&message=Component added successfully');
 }
 
 async function updateComponent(formData: FormData) {
   'use server';
-  await requireAdmin();
-  const id = String(formData.get('id'));
-  const name = String(formData.get('name'));
-  const type = String(formData.get('type')) as 'EARNING' | 'DEDUCTION';
-  const isVariable = String(formData.get('isVariable')) === 'on';
-  await prisma.salaryComponent.update({ where: { id }, data: { name, type, isVariable } });
-  revalidatePath('/admin/components');
+  try {
+    await requireAdmin();
+    const id = String(formData.get('id'));
+    const name = String(formData.get('name')).trim();
+    const type = String(formData.get('type')) as ComponentType;
+    const isVariable = formData.get('isVariable') === 'on';
+
+    await prisma.salaryComponent.update({
+      where: { id },
+      data: { name, type, isVariable }
+    });
+    revalidatePath('/admin/components');
+  } catch (error) {
+    console.error('[updateComponent] Error:', error);
+    throw error;
+  }
+  redirect('/admin/components?success=true&message=Component updated');
 }
 
 async function toggleComponent(formData: FormData) {
   'use server';
-  await requireAdmin();
-  const id = String(formData.get('id'));
-  const isActive = String(formData.get('isActive')) === 'true';
-  await prisma.salaryComponent.update({ where: { id }, data: { isActive: !isActive } });
-  revalidatePath('/admin/components');
+  try {
+    await requireAdmin();
+    const id = String(formData.get('id'));
+    const isActive = String(formData.get('isActive')) === 'true';
+
+    await prisma.salaryComponent.update({
+      where: { id },
+      data: { isActive: !isActive }
+    });
+    revalidatePath('/admin/components');
+  } catch (error) {
+    console.error('[toggleComponent] Error:', error);
+    throw error;
+  }
+  redirect('/admin/components?success=true&message=Status changed');
 }
 
 export default async function ComponentsPage() {

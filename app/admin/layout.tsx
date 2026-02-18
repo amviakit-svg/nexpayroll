@@ -1,45 +1,37 @@
-import Link from 'next/link';
+import AdminSidebar from '@/components/AdminSidebar';
 import SignOutButton from '@/components/SignOutButton';
 import { requireAdmin } from '@/lib/session';
 import { APP_NAME } from '@/lib/brand';
-
-const nav = [
-  { href: '/admin/employees', label: 'Employees' },
-  { href: '/admin/components', label: 'Components' },
-  { href: '/admin/assignments', label: 'Assignments' },
-  { href: '/admin/payroll', label: 'Payroll' },
-  { href: '/admin/leaves', label: 'Leaves' }
-];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await requireAdmin();
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-7xl gap-6 p-4 md:p-6">
-      <aside className="panel hidden h-fit w-64 shrink-0 md:block">
-        <p className="text-base font-semibold">{APP_NAME}</p>
-        <p className="mb-4 text-sm text-slate-500">Admin workspace</p>
-        <nav className="space-y-2 text-sm">
-          {nav.map((item) => (
-            <Link key={item.href} href={item.href} className="block rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100">
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
+      <AdminSidebar appName={APP_NAME} />
 
       <main className="flex-1 space-y-6">
-        <div className="panel flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <header className="panel flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-slate-100 bg-white shadow-sm rounded-2xl">
           <div>
-            <p className="text-sm text-slate-500">Signed in as</p>
-            <p className="font-semibold">{session.user.name}</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-blue-400">Current Session</p>
+            <div className="flex items-center gap-3 mt-1">
+              <div className="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white text-xs font-normal">
+                {session.user.name?.charAt(0) || 'A'}
+              </div>
+              <p className="text-slate-700 font-normal">{session.user.name}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-slate-500">Administrator</p>
+          <div className="flex items-center gap-4">
+            <div className="text-right hidden sm:block">
+              <p className="text-[10px] text-blue-300 uppercase tracking-widest italic leading-tight">Administrator Access</p>
+            </div>
             <SignOutButton />
           </div>
+        </header>
+
+        <div className="min-h-[calc(100vh-200px)] animate-in fade-in slide-in-from-bottom-2 duration-500">
+          {children}
         </div>
-        {children}
       </main>
     </div>
   );

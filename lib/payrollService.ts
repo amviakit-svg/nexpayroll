@@ -1,4 +1,3 @@
-import path from 'path';
 import { prisma } from './prisma';
 import { computePayroll } from './payroll';
 import { generatePayslipPdf } from './pdf';
@@ -121,31 +120,7 @@ export async function submitPayroll(
       await prisma.payrollLineItem.createMany({ data: items });
     }
 
-    const filePath = path.join(process.cwd(), 'public', 'payslips', `${cycle.year}-${cycle.month}-${row.employee.id}.pdf`);
-    await generatePayslipPdf(filePath, {
-      employeeName: row.employee.name,
-      employeeEmail: row.employee.email,
-      month,
-      year,
-      leaves: row.leaves,
-      workingDays: row.workingDays,
-      fixedEarnings: row.fixedEarnings,
-      variableEarnings: row.variableEarnings,
-      fixedDeductions: row.fixedDeductions,
-      variableDeductions: row.variableDeductions,
-      grossEarnings: row.grossEarnings,
-      totalDeductions: row.totalDeductions,
-      netMonthlySalary: row.netMonthlySalary,
-      finalPayable: row.finalPayable,
-      items: items.map((v) => ({
-        name: v.componentNameSnapshot,
-        type: v.componentTypeSnapshot,
-        amount: Number(v.amount),
-        isVariableAdjustment: v.isVariableAdjustment
-      }))
-    });
-
-    await prisma.payrollEntry.update({ where: { id: entry.id }, data: { payslipPath: filePath } });
+    await generatePayslipForEntry(entry.id);
   }
 
   await prisma.payrollCycle.update({
@@ -154,4 +129,140 @@ export async function submitPayroll(
   });
 
   return cycle;
+}
+
+export async function generatePayslipForEntry(entryId: string) {
+  const entry = await prisma.payrollEntry.findUnique({
+    where: { id: entryId },
+    include: {
+      employee: true,
+      payrollCycle: true,
+      lineItems: true
+    }
+  });
+
+  if (!entry) throw new Error('Entry not found');
+
+  const config = await prisma.tenantConfig.findFirst();
+  const declarations = await prisma.taxDeclaration.findMany({
+    where: { userId: entry.employeeId, year: entry.payrollCycle.year }
+  });
+
+  const { join } = await import('path');
+  const relativePath = join('public', 'payslips', `${entry.payrollCycle.year}-${entry.payrollCycle.month}-${entry.employeeId}.pdf`);
+  const absolutePath = join(process.cwd(), relativePath);
+
+  const fixedEarnings = entry.lineItems.filter(i => i.componentTypeSnapshot === 'EARNING' && !i.isVariableAdjustment).reduce((acc, i) => acc + Number(i.amount), 0);
+  const variableEarnings = entry.lineItems.filter(i => i.componentTypeSnapshot === 'EARNING' && i.isVariableAdjustment).reduce((acc, i) => acc + Number(i.amount), 0);
+  const fixedDeductions = entry.lineItems.filter(i => i.componentTypeSnapshot === 'DEDUCTION' && !i.isVariableAdjustment).reduce((acc, i) => acc + Number(i.amount), 0);
+  const variableDeductions = entry.lineItems.filter(i => i.componentTypeSnapshot === 'DEDUCTION' && i.isVariableAdjustment).reduce((acc, i) => acc + Number(i.amount), 0);
+
+  await generatePayslipPdf(absolutePath, {
+    companyName: config?.companyName,
+    companyAddress: config?.companyAddress || undefined,
+    companyPan: config?.companyPan || undefined,
+    companyLogoUrl: config?.companyLogoUrl || undefined,
+    watermarkEnabled: config?.watermarkEnabled,
+    watermarkText: config?.watermarkText || undefined,
+
+    employeeName: entry.employee.name,
+    employeeEmail: entry.employee.email,
+    employeeCode: entry.employee.employeeCode || undefined,
+    department: entry.employee.department || undefined,
+    designation: entry.employee.designation || undefined,
+    dateOfJoining: (entry.employee.dateOfJoining instanceof Date && !isNaN(entry.employee.dateOfJoining.getTime()))
+      ? entry.employee.dateOfJoining.toISOString().split('T')[0]
+      : undefined,
+
+    employeePan: entry.employee.pan || undefined,
+    pfNumber: entry.employee.pfNumber || undefined,
+    // esiNumber: entry.employee.esiNumber || undefined,
+    bankName: entry.employee.bankName || undefined,
+    accountNumber: entry.employee.accountNumber || undefined,
+
+    month: entry.payrollCycle.month,
+    year: entry.payrollCycle.year,
+    leaves: entry.leaves,
+    workingDays: entry.workingDays,
+    fixedEarnings,
+    variableEarnings,
+    fixedDeductions,
+    variableDeductions,
+    grossEarnings: Number(entry.grossEarnings),
+    totalDeductions: Number(entry.totalDeductions),
+    netMonthlySalary: Number(entry.netMonthlySalary),
+    finalPayable: Number(entry.finalPayable),
+
+    annualGross: Number(entry.grossEarnings) * 12,
+    standardDeduction: 75000,
+    total80C: declarations.filter(d => d.category === '80C').reduce((acc, d) => acc + Number(d.amount || 0), 0),
+    total80D: declarations.filter(d => d.category === '80D').reduce((acc, d) => acc + Number(d.amount || 0), 0),
+    taxableIncome: 0, // Deprecated in favor of dynamic rows
+    taxPayable: 0,
+
+    // --- Dynamic Tax Projection ---
+    taxProjection: await (async () => {
+      const rows = await prisma.taxProjectionRow.findMany({ orderBy: { order: 'asc' } });
+      const context: Record<string, number> = {
+        'Annual Gross Salary': Number(entry.grossEarnings) * 12,
+        'Standard Deduction': 75000,
+        'Professional Tax': (fixedDeductions * 12),
+        'Total 80C': declarations.filter(d => d.category === '80C').reduce((acc, d) => acc + Number(d.amount || 0), 0),
+        'Total 80D': declarations.filter(d => d.category === '80D').reduce((acc, d) => acc + Number(d.amount || 0), 0),
+        'HRA Exemption': declarations.filter(d => d.category === 'HRA').reduce((acc, d) => acc + Number(d.amount || 0), 0),
+      };
+
+      return rows.map(r => {
+        let value = 0;
+        try {
+          // Replace {Label} with context values
+          let expr = r.formula;
+          for (const [key, val] of Object.entries(context)) {
+            expr = expr.replace(new RegExp(`{${key}}`, 'g'), String(val));
+          }
+          // Allow referencing previously calculated rows by label
+          // (Simple single-pass, relies on order)
+          for (const [key, val] of Object.entries(context)) {
+            expr = expr.replace(new RegExp(`{${key}}`, 'g'), String(val));
+          }
+
+          // Safe eval (numbers and operators only)
+          // Removing anything that isn't a digit, operator, dot, or parenthesis
+          const sanitized = expr.replace(/[^0-9+\-*/(). ]/g, '');
+          value = new Function(`return ${sanitized}`)();
+
+          // Add to context for subsequent rows
+          context[r.label] = value;
+        } catch (e) {
+          console.error(`Error evaluating formula for ${r.label}:`, e);
+          value = 0;
+        }
+        return { label: r.label, value };
+      });
+    })(),
+
+    items: entry.lineItems.map(i => ({
+      name: i.componentNameSnapshot,
+      type: i.componentTypeSnapshot,
+      amount: Number(i.amount),
+      isVariableAdjustment: i.isVariableAdjustment
+    }))
+  });
+
+  return prisma.payrollEntry.update({
+    where: { id: entryId },
+    data: { payslipPath: relativePath },
+    include: { employee: true }
+  });
+}
+
+export async function reopenPayroll(year: number, month: number) {
+  const existing = await prisma.payrollCycle.findUnique({ where: { year_month: { year, month } } });
+  if (!existing) throw new Error('Payroll cycle not found');
+  if (existing.status !== 'SUBMITTED') throw new Error('Payroll cycle is not submitted');
+
+  return prisma.payrollCycle.update({
+    where: { id: existing.id },
+    data: { status: 'DRAFT' }
+  });
 }

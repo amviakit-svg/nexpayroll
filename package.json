@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
-    "leave:reset-balances": "tsx scripts/reset-monthly-balances.ts"
+    "leave:reset-balances": "tsx scripts/reset-monthly-balances.ts",
+    "payroll:regenerate-pdfs": "tsx scripts/regenerate-payslips.ts"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",
@@ -23,11 +24,13 @@
     "pdfkit": "^0.15.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "20.16.5",
+    "@types/papaparse": "^5.5.2",
     "@types/pdfkit": "^0.13.6",
     "@types/react": "18.3.5",
     "@types/react-dom": "18.3.0",

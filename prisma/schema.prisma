@@ -37,14 +37,21 @@ model User {
   role            Role                     @default(EMPLOYEE)
   isActive        Boolean                  @default(true)
   managerId       String?
+  
+  // Basic Info
   pan             String?
   dateOfJoining   DateTime?
   designation     String?
-  pfNumber        String?
   employeeCode    String?                  @unique
+  department      String?
+  
+  // Bank & IDs
   bankName        String?
   accountNumber   String?
   ifscCode        String?
+  pfNumber        String?                  // EPF No
+  
+  photoUrl        String?
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 
@@ -55,11 +62,55 @@ model User {
   leaveRequests   LeaveRequest[]           @relation("EmployeeLeaves")
   approvedLeaves  LeaveRequest[]           @relation("ApprovedLeaves")
   leaveBalances   EmployeeBalance[]
+  taxDeclarations TaxDeclaration[]
+  attendanceRecords Attendance[]
+}
+
+model FormSection {
+  id          String   @id @default(cuid())
+  name        String   // Display Name (e.g. "Banking")
+  identifier  String   @unique // Mapping key (e.g. "bank")
+  isVisible   Boolean  @default(true)
+  order       Int      @default(0)
+}
+
+
+model TenantConfig {
+  id            String   @id @default(cuid())
+  companyName   String   @default("My Company")
+  companyAddress String?
+  companyPan     String?
+  companyLogoUrl String?
+  watermarkEnabled Boolean @default(false)
+  watermarkText   String   @default("NexPayroll")
+  updatedAt      DateTime @updatedAt
+}
+
+model TaxCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique // e.g., "80C"
+  description String?  // e.g., "Investment Deductions"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model TaxDeclaration {
+  id            String   @id @default(cuid())
+  userId        String
+  year          Int      // Financial year, e.g., 2024 for 2024-25
+  category      String   // e.g., "80C", "80D", "HRA"
+  itemName      String   // e.g., "LIC", "Public Provident Fund"
+  amount        Decimal  @db.Decimal(10, 2)
+  isProvisional Boolean  @default(true)
+  
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year, category, itemName])
 }
 
 model SalaryComponent {
   id           String                   @id @default(cuid())
-  name         String                   @unique
+  name         String
   type         ComponentType
   isVariable   Boolean                  @default(false)
   isActive     Boolean                  @default(true)
@@ -67,6 +118,8 @@ model SalaryComponent {
 
   assignments  EmployeeComponentValue[]
   lineItems    PayrollLineItem[]
+
+  @@unique([name, type])
 }
 
 model EmployeeComponentValue {
@@ -185,4 +238,36 @@ model EmployeeBalance {
 
   @@unique([employeeId, leaveTypeId, year, month])
   @@index([employeeId, year, month])
+}
+
+model TaxProjectionRow {
+  id          String   @id @default(cuid())
+  label       String   // e.g., "Net Taxable Income"
+  formula     String   // e.g., "{Annual Gross} - {Standard Deduction}"
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Attendance {
+  id              String   @id @default(cuid())
+  employeeId      String
+  date            DateTime @db.Date
+  day             String
+  shift           String?
+  inTime          String?
+  outTime         String?
+  workOT          String?
+  overtime        String?
+  lessHrs         String?
+  status          String   // e.g., "P", "A", "L"
+  remark          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  employee        User     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([employeeId, date])
 }

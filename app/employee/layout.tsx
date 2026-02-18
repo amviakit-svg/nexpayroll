@@ -15,8 +15,10 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
           <p className="font-semibold">{session.user.name}</p>
         </div>
         <div className="flex gap-4 items-center">
+          <Link href="/employee/profile" className="text-slate-600 hover:text-slate-900">My Info</Link>
           <Link href="/employee/payslips" className="text-slate-600 hover:text-slate-900">Payslips</Link>
           <Link href="/employee/leaves" className="text-slate-600 hover:text-slate-900">Leaves</Link>
+          <Link href="/employee/attendance" className="text-slate-600 hover:text-slate-900 font-bold text-blue-600">Attendance</Link>
           <SignOutButton />
         </div>
       </div>

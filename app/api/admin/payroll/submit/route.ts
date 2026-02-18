@@ -17,6 +17,7 @@ export async function POST(req: Request) {
     await submitPayroll(year, month, leavesByEmployee, variableByEmployee, session.user.id);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
+    console.error('[PAYROLL_SUBMIT_ERROR]', e);
     return NextResponse.json({ error: e?.message || 'Failed' }, { status: 400 });
   }
 }

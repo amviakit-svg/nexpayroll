@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
       const defaultPassword = 'password123';
       const hash = await bcrypt.hash(defaultPassword, 10);
-      
+
       const role = emp.role === 'ADMIN' ? 'ADMIN' : 'EMPLOYEE';
 
       await prisma.user.upsert({
@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
           bankName: emp.bankName || null,
           accountNumber: emp.accountNumber || null,
           ifscCode: emp.ifscCode || null,
+          department: emp.department || null,
           dateOfJoining: emp.dateOfJoining ? new Date(emp.dateOfJoining) : null,
           // managerId logic: If manager email provided, look it up? Too complex for now.
         },
@@ -65,12 +66,13 @@ export async function POST(req: NextRequest) {
           bankName: emp.bankName || null,
           accountNumber: emp.accountNumber || null,
           ifscCode: emp.ifscCode || null,
+          department: emp.department || null,
           dateOfJoining: emp.dateOfJoining ? new Date(emp.dateOfJoining) : null,
         }
       });
       results.push({ email: emp.email, status: 'success' });
     } catch (e) {
-        console.error(e);
+      console.error(e);
       errors.push({ email: emp.email, error: (e as Error).message });
     }
   }
