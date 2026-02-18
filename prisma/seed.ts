@@ -21,14 +21,14 @@ async function main() {
   });
 
   await prisma.salaryComponent.upsert({
-    where: { name: 'Basic Pay' },
-    update: { type: ComponentType.EARNING, isVariable: false, isActive: true },
+    where: { name_type: { name: 'Basic Pay', type: ComponentType.EARNING } },
+    update: { isVariable: false, isActive: true },
     create: { name: 'Basic Pay', type: ComponentType.EARNING, isVariable: false }
   });
 
   await prisma.salaryComponent.upsert({
-    where: { name: 'Professional Tax' },
-    update: { type: ComponentType.DEDUCTION, isVariable: false, isActive: true },
+    where: { name_type: { name: 'Professional Tax', type: ComponentType.DEDUCTION } },
+    update: { isVariable: false, isActive: true },
     create: { name: 'Professional Tax', type: ComponentType.DEDUCTION, isVariable: false }
   });
 
