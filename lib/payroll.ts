@@ -30,8 +30,13 @@ export function computePayroll(components: PayrollComponent[], leaves: number) {
   const grossEarnings = fixedEarnings + variableEarnings;
   const totalDeductions = fixedDeductions + variableDeductions;
   const netMonthlySalary = grossEarnings - totalDeductions;
+  const fixedNet = fixedEarnings - fixedDeductions;
+
+  // Refined Formula: Leave Deduction = ((Fixed Gross - Fixed Deductions) / 30) * Leaves
+  // Variable Adjustments (Variable Components) are NOT considered for leave deduction base.
+  const leaveDeduction = (fixedNet / 30) * leaves;
+  const finalPayable = netMonthlySalary - leaveDeduction;
   const workingDays = Math.max(0, 30 - leaves);
-  const finalPayable = (netMonthlySalary / 30) * workingDays;
 
   return {
     fixedEarnings,

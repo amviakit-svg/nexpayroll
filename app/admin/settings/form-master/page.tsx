@@ -39,8 +39,7 @@ async function deleteSection(formData: FormData) {
     await requireAdmin();
     const id = String(formData.get('id'));
     await prisma.formSection.delete({ where: { id } });
-    revalidatePath('/admin/form-master');
-    revalidatePath('/admin/employees');
+    revalidatePath('/admin/settings/form-master');
 }
 
 export default async function FormMasterPage() {
@@ -64,17 +63,8 @@ export default async function FormMasterPage() {
 
     return (
         <div className="max-w-6xl mx-auto space-y-10 animate-in pb-24">
-            {/* Dynamic Header with Navigation */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div className="flex items-center gap-4">
-                    <Link href="/admin/employees" className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg hover:scale-110 transition-all" title="Back to Directory">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    </Link>
-                    <div>
-                        <h1 className="text-4xl font-black text-slate-900 tracking-tight italic">Form Architect</h1>
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1 opacity-70">Master Layout & Visibility Controls</p>
-                    </div>
-                </div>
+            <div className="hidden">
+                <h1 className="text-4xl font-black text-slate-900 tracking-tight italic">Form Architect</h1>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">

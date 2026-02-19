@@ -10,7 +10,7 @@ const navItems = [
     { href: '/admin/payroll', label: 'Payroll', icon: '💰' },
     { href: '/admin/leaves', label: 'Leaves', icon: '📅' },
     { href: '/admin/attendance', label: 'Attendance', icon: '🕒' },
-    { href: '/admin/form-master', label: 'Form Master', icon: '🏗️' },
+    { href: '/admin/workspace', label: 'Workspace', icon: '🗂️' },
     { href: '/admin/settings', label: 'Settings', icon: '⚙️' }
 ];
 

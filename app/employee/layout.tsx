@@ -19,6 +19,7 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
           <Link href="/employee/payslips" className="text-slate-600 hover:text-slate-900">Payslips</Link>
           <Link href="/employee/leaves" className="text-slate-600 hover:text-slate-900">Leaves</Link>
           <Link href="/employee/attendance" className="text-slate-600 hover:text-slate-900 font-bold text-blue-600">Attendance</Link>
+          <Link href="/employee/workspace" className="text-slate-600 hover:text-slate-900 font-bold text-orange-600">Workspace</Link>
           <SignOutButton />
         </div>
       </div>

@@ -231,7 +231,7 @@ export async function generatePayslipPdf(filePath: string, data: PayslipData) {
         ],
         [
           { label: 'PF Number', value: data.pfNumber || '-' },
-          { label: 'Worked Days', value: String(data.workingDays) },
+          { label: 'Working Days', value: String(data.workingDays) },
         ]
       ];
 

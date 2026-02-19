@@ -65,10 +65,8 @@ export default async function SettingsPage() {
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
-            <h1 className="text-2xl font-bold">Company Settings</h1>
-
-            <div className="panel">
-                <h2 className="text-lg font-semibold mb-4">Organization Profile</h2>
+            <div className="panel bg-white border-2 border-slate-900/5 shadow-2xl rounded-[2.5rem] p-8">
+                <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-8 pb-4 border-b border-slate-50 italic">Organization Profile</h2>
                 <p className="text-sm text-slate-500 mb-6"> This information will appear on all generated payslips.</p>
 
                 <form action={updateConfig} className="space-y-4">

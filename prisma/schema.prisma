@@ -36,6 +36,8 @@ model User {
   taxDeclarations   TaxDeclaration[]
   manager           User?                    @relation("ManagerRelation", fields: [managerId], references: [id])
   directReports     User[]                   @relation("ManagerRelation")
+  uploadedDocuments Document[]               @relation("UploadedDocuments")
+  sharedDocuments   DocumentShare[]          @relation("SharedDocuments")
 }
 
 model FormSection {
@@ -250,4 +252,46 @@ enum LeaveStatus {
   APPROVED
   REJECTED
   CANCELLED
+}
+
+model Folder {
+  id        String     @id @default(cuid())
+  name      String
+  parentId  String?
+  parent    Folder?    @relation("FolderToFolder", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Folder[]   @relation("FolderToFolder")
+  documents Document[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([name, parentId])
+  @@index([parentId])
+}
+
+model Document {
+  id         String          @id @default(cuid())
+  name       String
+  filePath   String
+  fileSize   Int // in bytes
+  fileType   String // mime type or extension
+  folderId   String?
+  folder     Folder?         @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  uploaderId String
+  uploader   User            @relation("UploadedDocuments", fields: [uploaderId], references: [id])
+  shares     DocumentShare[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([folderId])
+}
+
+model DocumentShare {
+  id         String   @id @default(cuid())
+  documentId String
+  userId     String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User     @relation("SharedDocuments", fields: [userId], references: [id], onDelete: Cascade)
+  sharedAt   DateTime @default(now())
+
+  @@unique([documentId, userId])
 }
