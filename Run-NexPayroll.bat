@@ -55,10 +55,10 @@ if %ERRORLEVEL% NEQ 0 (
     goto MENU
 )
 echo [2/3] Starting NexPayroll Dev Server...
-start /b npm run dev
+start /b npm run dev -- -p 3005
 echo [3/3] Waiting for server (10s)...
 timeout /t 10 /nobreak > nul
-start http://localhost:3000
+start http://localhost:3005
 echo.
 echo [SUCCESS] Server is running. Press Ctrl+C in this window to stop later.
 pause

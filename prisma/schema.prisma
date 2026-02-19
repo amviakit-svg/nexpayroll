@@ -7,6 +7,229 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                String                   @id @default(cuid())
+  name              String
+  email             String                   @unique
+  passwordHash      String
+  role              Role                     @default(EMPLOYEE)
+  isActive          Boolean                  @default(true)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  managerId         String?
+  accountNumber     String?
+  bankName          String?
+  dateOfJoining     DateTime?
+  designation       String?
+  employeeCode      String?                  @unique
+  ifscCode          String?
+  pan               String?
+  pfNumber          String?
+  department        String?
+  photoUrl          String?
+  attendanceRecords Attendance[]
+  leaveBalances     EmployeeBalance[]
+  componentValues   EmployeeComponentValue[]
+  approvedLeaves    LeaveRequest[]           @relation("ApprovedLeaves")
+  leaveRequests     LeaveRequest[]           @relation("EmployeeLeaves")
+  payrollEntries    PayrollEntry[]
+  taxDeclarations   TaxDeclaration[]
+  manager           User?                    @relation("ManagerRelation", fields: [managerId], references: [id])
+  directReports     User[]                   @relation("ManagerRelation")
+}
+
+model FormSection {
+  id         String  @id @default(cuid())
+  name       String
+  identifier String  @unique
+  isVisible  Boolean @default(true)
+  order      Int     @default(0)
+}
+
+model TenantConfig {
+  id               String   @id @default(cuid())
+  companyName      String   @default("My Company")
+  companyAddress   String?
+  companyPan       String?
+  companyLogoUrl   String?
+  updatedAt        DateTime @updatedAt
+  watermarkEnabled Boolean  @default(false)
+  watermarkText    String   @default("NexPayroll")
+}
+
+model TaxCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model TaxDeclaration {
+  id            String  @id @default(cuid())
+  userId        String
+  year          Int
+  category      String
+  itemName      String
+  amount        Decimal @db.Decimal(10, 2)
+  isProvisional Boolean @default(true)
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year, category, itemName])
+}
+
+model SalaryComponent {
+  id          String                   @id @default(cuid())
+  name        String
+  type        ComponentType
+  isActive    Boolean                  @default(true)
+  createdAt   DateTime                 @default(now())
+  isVariable  Boolean                  @default(false)
+  assignments EmployeeComponentValue[]
+  lineItems   PayrollLineItem[]
+
+  @@unique([name, type])
+}
+
+model EmployeeComponentValue {
+  id          String          @id @default(cuid())
+  employeeId  String
+  componentId String
+  amount      Decimal         @db.Decimal(10, 2)
+  isActive    Boolean         @default(true)
+  component   SalaryComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  employee    User            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, componentId])
+}
+
+model PayrollCycle {
+  id          String         @id @default(cuid())
+  year        Int
+  month       Int
+  status      PayrollStatus  @default(DRAFT)
+  submittedAt DateTime?
+  createdById String
+  createdAt   DateTime       @default(now())
+  entries     PayrollEntry[]
+
+  @@unique([year, month])
+}
+
+model PayrollEntry {
+  id               String            @id @default(cuid())
+  payrollCycleId   String
+  employeeId       String
+  leaves           Int               @default(0)
+  workingDays      Int
+  grossEarnings    Decimal           @db.Decimal(10, 2)
+  totalDeductions  Decimal           @db.Decimal(10, 2)
+  netMonthlySalary Decimal           @db.Decimal(10, 2)
+  finalPayable     Decimal           @db.Decimal(10, 2)
+  payslipPath      String?
+  employee         User              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  payrollCycle     PayrollCycle      @relation(fields: [payrollCycleId], references: [id], onDelete: Cascade)
+  lineItems        PayrollLineItem[]
+
+  @@unique([payrollCycleId, employeeId])
+}
+
+model PayrollLineItem {
+  id                    String           @id @default(cuid())
+  payrollEntryId        String
+  componentId           String?
+  amount                Decimal          @db.Decimal(10, 2)
+  componentNameSnapshot String
+  componentTypeSnapshot ComponentType
+  isVariableAdjustment  Boolean          @default(false)
+  component             SalaryComponent? @relation(fields: [componentId], references: [id])
+  payrollEntry          PayrollEntry     @relation(fields: [payrollEntryId], references: [id], onDelete: Cascade)
+}
+
+model LeaveType {
+  id            String            @id @default(cuid())
+  name          String            @unique
+  color         String            @default("#3B82F6")
+  description   String?
+  isActive      Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  balances      EmployeeBalance[]
+  leaveRequests LeaveRequest[]
+}
+
+model Holiday {
+  id        String   @id @default(cuid())
+  name      String
+  date      DateTime @unique @db.Date
+  createdAt DateTime @default(now())
+}
+
+model LeaveRequest {
+  id            String      @id @default(cuid())
+  employeeId    String
+  leaveTypeId   String
+  startDate     DateTime    @db.Date
+  endDate       DateTime    @db.Date
+  daysRequested Int
+  status        LeaveStatus @default(PENDING)
+  reason        String?
+  approverId    String?
+  requestedAt   DateTime    @default(now())
+  approvedAt    DateTime?
+  comments      String?
+  approver      User?       @relation("ApprovedLeaves", fields: [approverId], references: [id])
+  employee      User        @relation("EmployeeLeaves", fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType     LeaveType   @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, status])
+  @@index([startDate, endDate])
+}
+
+model EmployeeBalance {
+  id          String    @id @default(cuid())
+  employeeId  String
+  leaveTypeId String
+  year        Int
+  month       Int
+  balanceDays Int
+  employee    User      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, leaveTypeId, year, month])
+  @@index([employeeId, year, month])
+}
+
+model TaxProjectionRow {
+  id        String   @id @default(cuid())
+  label     String
+  formula   String
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Attendance {
+  id         String   @id @default(cuid())
+  employeeId String
+  date       DateTime @db.Date
+  day        String
+  shift      String?
+  inTime     String?
+  outTime    String?
+  workOT     String?
+  overtime   String?
+  lessHrs    String?
+  status     String
+  remark     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  employee   User     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([employeeId, date])
+}
+
 enum Role {
   ADMIN
   EMPLOYEE
@@ -27,247 +250,4 @@ enum LeaveStatus {
   APPROVED
   REJECTED
   CANCELLED
-}
-
-model User {
-  id              String                   @id @default(cuid())
-  name            String
-  email           String                   @unique
-  passwordHash    String
-  role            Role                     @default(EMPLOYEE)
-  isActive        Boolean                  @default(true)
-  managerId       String?
-  
-  // Basic Info
-  pan             String?
-  dateOfJoining   DateTime?
-  designation     String?
-  employeeCode    String?                  @unique
-  department      String?
-  
-  // Bank & IDs
-  bankName        String?
-  accountNumber   String?
-  ifscCode        String?
-  pfNumber        String?                  // EPF No
-  
-  photoUrl        String?
-  createdAt       DateTime                 @default(now())
-  updatedAt       DateTime                 @updatedAt
-
-  componentValues EmployeeComponentValue[]
-  payrollEntries  PayrollEntry[]
-  manager         User?                    @relation("ManagerRelation", fields: [managerId], references: [id], onDelete: SetNull)
-  directReports   User[]                   @relation("ManagerRelation")
-  leaveRequests   LeaveRequest[]           @relation("EmployeeLeaves")
-  approvedLeaves  LeaveRequest[]           @relation("ApprovedLeaves")
-  leaveBalances   EmployeeBalance[]
-  taxDeclarations TaxDeclaration[]
-  attendanceRecords Attendance[]
-}
-
-model FormSection {
-  id          String   @id @default(cuid())
-  name        String   // Display Name (e.g. "Banking")
-  identifier  String   @unique // Mapping key (e.g. "bank")
-  isVisible   Boolean  @default(true)
-  order       Int      @default(0)
-}
-
-
-model TenantConfig {
-  id            String   @id @default(cuid())
-  companyName   String   @default("My Company")
-  companyAddress String?
-  companyPan     String?
-  companyLogoUrl String?
-  watermarkEnabled Boolean @default(false)
-  watermarkText   String   @default("NexPayroll")
-  updatedAt      DateTime @updatedAt
-}
-
-model TaxCategory {
-  id          String   @id @default(cuid())
-  name        String   @unique // e.g., "80C"
-  description String?  // e.g., "Investment Deductions"
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-}
-
-model TaxDeclaration {
-  id            String   @id @default(cuid())
-  userId        String
-  year          Int      // Financial year, e.g., 2024 for 2024-25
-  category      String   // e.g., "80C", "80D", "HRA"
-  itemName      String   // e.g., "LIC", "Public Provident Fund"
-  amount        Decimal  @db.Decimal(10, 2)
-  isProvisional Boolean  @default(true)
-  
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, year, category, itemName])
-}
-
-model SalaryComponent {
-  id           String                   @id @default(cuid())
-  name         String
-  type         ComponentType
-  isVariable   Boolean                  @default(false)
-  isActive     Boolean                  @default(true)
-  createdAt    DateTime                 @default(now())
-
-  assignments  EmployeeComponentValue[]
-  lineItems    PayrollLineItem[]
-
-  @@unique([name, type])
-}
-
-model EmployeeComponentValue {
-  id           String          @id @default(cuid())
-  employeeId   String
-  componentId  String
-  amount       Decimal         @db.Decimal(10, 2)
-  isActive     Boolean         @default(true)
-
-  employee     User            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  component    SalaryComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
-
-  @@unique([employeeId, componentId])
-}
-
-model PayrollCycle {
-  id            String          @id @default(cuid())
-  year          Int
-  month         Int
-  status        PayrollStatus   @default(DRAFT)
-  submittedAt   DateTime?
-  createdById   String
-  createdAt     DateTime        @default(now())
-
-  entries       PayrollEntry[]
-
-  @@unique([year, month])
-}
-
-model PayrollEntry {
-  id                String           @id @default(cuid())
-  payrollCycleId    String
-  employeeId        String
-  leaves            Int              @default(0)
-  workingDays       Int
-  grossEarnings     Decimal          @db.Decimal(10, 2)
-  totalDeductions   Decimal          @db.Decimal(10, 2)
-  netMonthlySalary  Decimal          @db.Decimal(10, 2)
-  finalPayable      Decimal          @db.Decimal(10, 2)
-  payslipPath       String?
-
-  payrollCycle      PayrollCycle     @relation(fields: [payrollCycleId], references: [id], onDelete: Cascade)
-  employee          User             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  lineItems         PayrollLineItem[]
-
-  @@unique([payrollCycleId, employeeId])
-}
-
-model PayrollLineItem {
-  id                     String           @id @default(cuid())
-  payrollEntryId         String
-  componentId            String?
-  componentNameSnapshot  String
-  componentTypeSnapshot  ComponentType
-  amount                 Decimal          @db.Decimal(10, 2)
-  isVariableAdjustment   Boolean          @default(false)
-
-  payrollEntry           PayrollEntry     @relation(fields: [payrollEntryId], references: [id], onDelete: Cascade)
-  component              SalaryComponent? @relation(fields: [componentId], references: [id], onDelete: SetNull)
-}
-
-// Leave Management Models
-model LeaveType {
-  id          String         @id @default(cuid())
-  name        String         @unique
-  color       String         @default("#3B82F6")
-  description String?
-  isActive    Boolean        @default(true)
-  createdAt   DateTime       @default(now())
-
-  leaveRequests LeaveRequest[]
-  balances      EmployeeBalance[]
-}
-
-model Holiday {
-  id        String   @id @default(cuid())
-  name      String
-  date      DateTime @db.Date
-  createdAt DateTime @default(now())
-
-  @@unique([date])
-}
-
-model LeaveRequest {
-  id             String     @id @default(cuid())
-  employeeId     String
-  leaveTypeId    String
-  startDate      DateTime   @db.Date
-  endDate        DateTime   @db.Date
-  daysRequested  Int
-  status         LeaveStatus @default(PENDING)
-  reason         String?
-  approverId     String?
-  requestedAt    DateTime   @default(now())
-  approvedAt     DateTime?
-  comments       String?
-
-  employee       User       @relation("EmployeeLeaves", fields: [employeeId], references: [id], onDelete: Cascade)
-  leaveType      LeaveType  @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
-  approver       User?      @relation("ApprovedLeaves", fields: [approverId], references: [id], onDelete: SetNull)
-
-  @@index([employeeId, status])
-  @@index([startDate, endDate])
-}
-
-model EmployeeBalance {
-  id          String    @id @default(cuid())
-  employeeId  String
-  leaveTypeId String
-  year        Int
-  month       Int
-  balanceDays Int
-
-  employee    User      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
-
-  @@unique([employeeId, leaveTypeId, year, month])
-  @@index([employeeId, year, month])
-}
-
-model TaxProjectionRow {
-  id          String   @id @default(cuid())
-  label       String   // e.g., "Net Taxable Income"
-  formula     String   // e.g., "{Annual Gross} - {Standard Deduction}"
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Attendance {
-  id              String   @id @default(cuid())
-  employeeId      String
-  date            DateTime @db.Date
-  day             String
-  shift           String?
-  inTime          String?
-  outTime         String?
-  workOT          String?
-  overtime        String?
-  lessHrs         String?
-  status          String   // e.g., "P", "A", "L"
-  remark          String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  employee        User     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@unique([employeeId, date])
-  @@index([employeeId, date])
 }
