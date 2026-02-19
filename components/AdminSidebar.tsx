@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 
 const navItems = [
     { href: '/admin/employees', label: 'Employees', icon: '👤' },
-    { href: '/admin/components', label: 'Components', icon: '🛠️' },
+    { href: '/admin/components', label: 'Salary Structure', icon: '🛠️' },
     { href: '/admin/assignments', label: 'Assignments', icon: '📝' },
     { href: '/admin/payroll', label: 'Payroll', icon: '💰' },
     { href: '/admin/leaves', label: 'Leaves', icon: '📅' },

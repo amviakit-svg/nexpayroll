@@ -36,10 +36,10 @@ export default function PayrollGrid({
     // If we are currently in Jan/Feb/Mar (1,2,3), the FY started last year
     const activeFYStart = selectedMonth <= 3 ? selectedYear - 1 : selectedYear;
 
-    // Years list: From 2023 to 5 years in the future, plus any custom selected year
+    // Years list: From 2025 to 5 years in the future, plus any custom selected year
     const years = useMemo(() => {
         const list = [];
-        const startYear = 2023;
+        const startYear = 2025;
         const endYear = currentYear + 5;
         for (let y = startYear; y <= endYear; y++) {
             list.push(y);

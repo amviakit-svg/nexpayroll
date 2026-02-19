@@ -126,7 +126,7 @@ export default async function EditEmployeeAssignmentsPage({ params }: { params: 
 
                 <Link
                     href={`/admin/employees/${employee.id}/tax`}
-                    className="inline-flex items-center h-12 px-8 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest text-[11px] hover:bg-black hover:shadow-2xl hover:shadow-slate-300 transition-all active:scale-95 shadow-xl shadow-slate-200"
+                    className="inline-flex items-center h-12 px-8 rounded-2xl bg-blue-700 text-white font-black uppercase tracking-widest text-[11px] hover:bg-blue-800 hover:shadow-2xl hover:shadow-blue-300 transition-all active:scale-95 shadow-xl shadow-blue-200"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mr-3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                     Manage Tax
@@ -134,30 +134,30 @@ export default async function EditEmployeeAssignmentsPage({ params }: { params: 
             </div>
 
             {/* Profile Highlight Card */}
-            <div className="panel bg-slate-900 border-0 shadow-2xl shadow-slate-200 overflow-hidden relative">
-                <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none"></div>
+            <div className="panel bg-blue-50 border-blue-200 shadow-xl shadow-blue-100 overflow-hidden relative">
+                <div className="absolute right-0 top-0 w-64 h-64 bg-blue-600/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none"></div>
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Payroll Subject</span>
-                            <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-                            <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest">{employee.employeeCode || 'System ID: ' + employee.id.slice(0, 5)}</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400">Payroll Subject</span>
+                            <span className="w-1 h-1 rounded-full bg-blue-200"></span>
+                            <span className="text-[10px] font-mono font-bold text-blue-500 uppercase tracking-widest">{employee.employeeCode || 'System ID: ' + employee.id.slice(0, 5)}</span>
                         </div>
-                        <h2 className="text-5xl font-black text-white tracking-tighter leading-none mb-3 italic uppercase">
+                        <h2 className="text-5xl font-black text-blue-900 tracking-tighter leading-none mb-3 italic uppercase">
                             {employee.name}
                         </h2>
                         <div className="flex items-center gap-4">
-                            <span className="text-sm font-bold text-slate-400 flex items-center bg-white/5 px-3 py-1 rounded-lg">
+                            <span className="text-sm font-bold text-blue-700 flex items-center bg-blue-600/5 px-3 py-1 rounded-lg">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mr-2 opacity-50"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
                                 {employee.designation || 'Staff Member'}
                             </span>
-                            <span className="text-sm font-bold text-slate-400 flex items-center bg-white/5 px-3 py-1 rounded-lg">
+                            <span className="text-sm font-bold text-blue-700 flex items-center bg-blue-600/5 px-3 py-1 rounded-lg">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mr-2 opacity-50"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                                 {employee.department || 'General Client'}
                             </span>
                         </div>
                     </div>
-                    <div className={`px-6 py-2 rounded-2xl text-[11px] font-black tracking-[0.2em] border shadow-2xl shadow-black/20 transform hover:scale-105 transition-all ${employee.isActive ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 'border-red-500/50 text-red-400 bg-red-500/10'}`}>
+                    <div className={`px-6 py-2 rounded-2xl text-[11px] font-black tracking-[0.2em] border shadow-xl shadow-blue-100/50 transform hover:scale-105 transition-all ${employee.isActive ? 'border-emerald-500/50 text-emerald-600 bg-emerald-50' : 'border-red-500/50 text-red-600 bg-red-50'}`}>
                         {employee.isActive ? 'ACCOUNT ACTIVE' : 'ACCOUNT DISABLED'}
                     </div>
                 </div>
@@ -173,11 +173,11 @@ export default async function EditEmployeeAssignmentsPage({ params }: { params: 
 
                 {/* Sticky Action Footer */}
                 <div className="sticky bottom-8 z-50 transform hover:translate-y-[-4px] transition-all duration-300">
-                    <div className="p-4 bg-white/80 backdrop-blur-xl border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex flex-col md:flex-row items-center gap-4">
-                        <button type="submit" className="btn-primary w-full md:flex-1 h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-slate-900/20 active:bg-black">
+                    <div className="p-4 bg-blue-50/80 backdrop-blur-xl border border-blue-100 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex flex-col md:flex-row items-center gap-4">
+                        <button type="submit" className="btn-primary w-full md:flex-1 h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-blue-200/50 active:bg-blue-800">
                             Save Final Structure
                         </button>
-                        <Link href="/admin/assignments" className="w-full md:w-auto px-10 h-14 inline-flex items-center justify-center font-black uppercase tracking-[0.2em] text-xs text-slate-500 border-2 border-slate-100 rounded-2xl hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95">
+                        <Link href="/admin/assignments" className="w-full md:w-auto px-10 h-14 inline-flex items-center justify-center font-black uppercase tracking-[0.2em] text-xs text-blue-500 border-2 border-blue-100 rounded-2xl hover:bg-white hover:text-blue-700 transition-all active:scale-95">
                             Cancel Changes
                         </Link>
                     </div>
@@ -185,12 +185,12 @@ export default async function EditEmployeeAssignmentsPage({ params }: { params: 
             </form>
 
             {/* Info Message */}
-            <div className="flex items-center gap-4 p-6 bg-slate-900/5 rounded-3xl border-2 border-dashed border-slate-200">
-                <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-lg shadow-slate-200">
+            <div className="flex items-center gap-4 p-6 bg-blue-50/50 rounded-3xl border-2 border-dashed border-blue-100">
+                <div className="w-10 h-10 rounded-full bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-100">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                 </div>
-                <p className="text-xs font-bold text-slate-500 leading-relaxed uppercase tracking-wider">
-                    Changes will be applied to <span className="text-slate-900 underline">future</span> payroll cycles. Existing draft payrolls must be re-processed to reflect new amounts.
+                <p className="text-xs font-bold text-blue-700 leading-relaxed uppercase tracking-wider">
+                    Changes will be applied to <span className="text-blue-900 underline font-black">future</span> payroll cycles. Existing draft payrolls must be re-processed to reflect new amounts.
                 </p>
             </div>
         </div>

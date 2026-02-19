@@ -97,6 +97,13 @@ npm start
 # pm2 restart nexpayroll
 ```
 
+### Update Cycle Summary
+| Action | Command | Purpose |
+| :--- | :--- | :--- |
+| **Develop** | `npm run dev` | Real-time updates as you code. |
+| **Publish** | `npm run build` | Saves your code into a "snapshot". |
+| **Run Live** | `npm start` | Runs the last "snapshot" saved. |
+
 ---
 
 ## Troubleshooting
@@ -116,3 +123,72 @@ npm start
   ```bash
   cat backups/your_backup_file.sql | docker exec -i salary_postgres psql -U postgres salary_mvp
   ```
+
+- **"Could not find a production build"?**
+  If you get this error while running `npm start`, it means you haven't built the app yet. Run:
+  ```bash
+  npm run build
+  npm start
+  ```
+  *Note: For development, use `npm run dev` instead.*
+
+---
+
+## 4. Linux First-Time Setup Guide
+
+Follow these steps to deploy NexPayroll on a fresh Linux server (Ubuntu/Debian recommended).
+
+### Phase 1: Prerequisites
+Run these commands to install Docker and Node.js:
+
+```bash
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+
+# Install Node.js (Version 20+)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
+### Phase 2: Project Setup
+```bash
+# Clone the project (replace with your repo URL)
+git clone <your-repo-url> nexpayroll
+cd nexpayroll
+
+# Install dependencies
+npm install
+
+# Setup Environment
+cp .env.example .env
+# EDIT .env to set your NEXTAUTH_SECRET and production URL
+nano .env
+```
+
+### Phase 3: Start Services
+```bash
+# Start Database
+docker compose up -d
+
+# Initialize Database (Prisma)
+npx prisma migrate deploy
+npx prisma db seed
+
+# Build and Start
+npm run build
+npm start # OR use PM2 for background process
+```
+
+### Phase 4: Keeping it Running (PM2)
+```bash
+sudo npm install -g pm2
+pm2 start npm --name "nexpayroll" -- start
+pm2 save
+pm2 startup
+```
+

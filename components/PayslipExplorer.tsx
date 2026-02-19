@@ -56,7 +56,7 @@ export default function PayslipExplorer({ initialSlips }: { initialSlips: any[] 
                                 }}
                                 className="w-full rounded-xl border-slate-200 text-sm font-bold py-2.5 shadow-sm focus:ring-2 focus:ring-blue-100 transition-all"
                             >
-                                {[2023, 2024, 2025, 2026].map(y => (
+                                {[2025, 2026, 2027].map(y => (
                                     <option key={y} value={y}>{y}-{y + 1}</option>
                                 ))}
                             </select>
@@ -117,7 +117,7 @@ export default function PayslipExplorer({ initialSlips }: { initialSlips: any[] 
                                 </button>
                                 <a
                                     href={`/api/payslips/${s.id}`}
-                                    className="bg-slate-900 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center gap-2 shadow-lg shadow-slate-100 group-hover:shadow-blue-200 hover:-translate-y-0.5"
+                                    className="bg-blue-700 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-800 transition-all flex items-center gap-2 shadow-lg shadow-blue-100 group-hover:shadow-blue-200 hover:-translate-y-0.5"
                                 >
                                     <span>📥</span> Download
                                 </a>
@@ -135,7 +135,7 @@ export default function PayslipExplorer({ initialSlips }: { initialSlips: any[] 
 
             {/* Preview Modal */}
             {previewSlip && (
-                <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[100] bg-blue-900/40 backdrop-blur-sm flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-200">
                     <div className="bg-white w-full max-w-5xl h-full rounded-[2rem] shadow-2xl flex flex-col overflow-hidden relative border border-white">
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <div className="flex items-center gap-4">
@@ -150,7 +150,7 @@ export default function PayslipExplorer({ initialSlips }: { initialSlips: any[] 
                             <div className="flex items-center gap-4">
                                 <a
                                     href={`/api/payslips/${previewSlip.id}`}
-                                    className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center gap-2 shadow-lg shadow-slate-200"
+                                    className="bg-blue-700 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-800 transition-all flex items-center gap-2 shadow-lg shadow-blue-200"
                                 >
                                     <span>📥</span> Download PDF
                                 </a>
@@ -162,7 +162,7 @@ export default function PayslipExplorer({ initialSlips }: { initialSlips: any[] 
                                 </button>
                             </div>
                         </div>
-                        <div className="flex-1 bg-slate-800 p-2 md:p-6 overflow-hidden">
+                        <div className="flex-1 bg-blue-50 p-2 md:p-6 overflow-hidden">
                             <iframe
                                 src={`/api/payslips/${previewSlip.id}?preview=true#toolbar=0&navpanes=0&scrollbar=0`}
                                 className="w-full h-full rounded-xl border-none shadow-2xl bg-white"
