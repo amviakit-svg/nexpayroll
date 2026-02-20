@@ -68,6 +68,19 @@ npm run start
 # Or for development: npm run dev
 ```
 
+For production deployments on Linux, it is highly recommended to use **PM2** to keep the application running in the background and automatically restart it on server reboots:
+```bash
+# 1. Install PM2 globally
+npm install -g pm2
+
+# 2. Start the Next.js application
+pm2 start npm --name "nexpayroll" -- start
+
+# 3. Save the PM2 process list to resurrect on reboot
+pm2 save
+pm2 startup
+```
+
 Open `http://localhost:3000`
 
 ## Seeded First Admin

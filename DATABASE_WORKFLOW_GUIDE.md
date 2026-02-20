@@ -78,3 +78,23 @@ If you are deploying updates manually from the server terminal instead of the Ma
    ```
 
 By adhering strictly to this cycle—`migrate dev` locally to generate the instructions, and `migrate deploy` on production to safely execute those instructions—you guarantee 100% data safety and a robust deployment pipeline.
+
+---
+
+## 4. Emergency Recovery (Migrate Reset)
+
+⚠️ **DANGER ZONE: NEVER RUN THIS ON AN ACTIVE PRODUCTION DATABASE UNLESS YOU INTEND TO LOSE ALL DATA.**
+
+If you are performing early test deployments on a brand new Linux server and a migration fails halfway through (resulting in a `P3009` error), Prisma will lock the database to prevent corruption. 
+
+Because the database is new and contains no real user data yet, the fastest way to recover is to completely wipe it and start fresh:
+
+```bash
+npx prisma migrate reset
+```
+
+**What this does:**
+1. Drops the entire database and all tables.
+2. Recreates a fresh, empty database.
+3. Re-applies all migration files flawlessly from top to bottom.
+4. Runs your `seed.ts` file to recreate the Admin user.
