@@ -9,7 +9,7 @@
 ALTER TYPE "LeaveStatus" ADD VALUE 'APPROVED_BY_MANAGER';
 
 -- DropIndex
-DROP INDEX "SalaryComponent_name_key";
+DROP INDEX IF EXISTS "SalaryComponent_name_key";
 
 -- AlterTable
 ALTER TABLE "LeaveRequest" ADD COLUMN     "stage" INTEGER NOT NULL DEFAULT 1;
