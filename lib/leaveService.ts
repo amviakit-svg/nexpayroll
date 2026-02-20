@@ -35,6 +35,62 @@ export async function calculateWorkingDays(startDate: Date, endDate: Date): Prom
   return workingDays;
 }
 
+// AI Leave Type Suggestion (Keyword based)
+export async function suggestLeaveType(reason: string): Promise<string | null> {
+  if (!reason) return null;
+  const r = reason.toLowerCase();
+
+  if (r.includes('sick') || r.includes('fever') || r.includes('doctor') || r.includes('hospital') || r.includes('medical') || r.includes('surgery')) {
+    return 'Sick';
+  }
+  if (r.includes('casual') || r.includes('personal') || r.includes('urgent') || r.includes('marriage') || r.includes('wedding')) {
+    return 'Casual';
+  }
+  if (r.includes('plan') || r.includes('vacation') || r.includes('trip') || r.includes('holiday')) {
+    return 'Planned';
+  }
+
+  return null;
+}
+
+// Conflict Awareness: Get team absence data
+export async function getTeamConflictData(employeeId: string, startDate: Date, endDate: Date) {
+  const employee = await prisma.user.findUnique({
+    where: { id: employeeId },
+    select: { managerId: true }
+  });
+
+  if (!employee?.managerId) return null;
+
+  const teamMembers = await prisma.user.findMany({
+    where: { managerId: employee.managerId, isActive: true },
+    select: { id: true, name: true }
+  });
+
+  const teamIds = teamMembers.map(tm => tm.id);
+
+  const overlappingLeaves = await prisma.leaveRequest.findMany({
+    where: {
+      employeeId: { in: teamIds },
+      status: { in: ['PENDING' as any, 'APPROVED' as any, 'APPROVED_BY_MANAGER' as any] },
+      OR: [
+        { startDate: { gte: startDate, lte: endDate } },
+        { endDate: { gte: startDate, lte: endDate } },
+        { AND: [{ startDate: { lte: startDate } }, { endDate: { gte: endDate } }] }
+      ]
+    },
+    include: { employee: { select: { id: true, name: true } } }
+  });
+
+  const uniqueAbsentees = new Set(overlappingLeaves.map(l => l.employeeId));
+
+  return {
+    totalTeamSize: teamMembers.length,
+    absentCount: uniqueAbsentees.size,
+    conflicts: overlappingLeaves
+  };
+}
+
 // Get or create employee balance
 export async function getOrCreateBalance(employeeId: string, leaveTypeId: string, year: number, month: number) {
   const balance = await prisma.employeeBalance.findUnique({
@@ -101,7 +157,7 @@ export async function createLeaveRequest(
       where: {
         employeeId,
         leaveTypeId,
-        status: { in: [LeaveStatus.PENDING, LeaveStatus.APPROVED] },
+        status: { in: ['PENDING' as any, 'APPROVED' as any, 'APPROVED_BY_MANAGER' as any] },
         startDate: {
           gte: new Date(now.getFullYear(), now.getMonth(), 1)
         }
@@ -125,7 +181,8 @@ export async function createLeaveRequest(
       endDate,
       daysRequested,
       reason,
-      status: LeaveStatus.PENDING
+      status: 'PENDING' as any,
+      stage: 1
     },
     include: {
       leaveType: true,
@@ -150,7 +207,7 @@ export async function updateLeaveRequest(
   });
 
   if (!existing) throw new Error('Leave request not found');
-  if (existing.status !== LeaveStatus.PENDING) {
+  if (existing.status !== ('PENDING' as any)) {
     throw new Error('Cannot modify leave request that is not in PENDING status');
   }
 
@@ -202,13 +259,13 @@ export async function cancelLeaveRequest(requestId: string, employeeId: string) 
   });
 
   if (!existing) throw new Error('Leave request not found');
-  if (existing.status !== LeaveStatus.PENDING) {
-    throw new Error('Can only cancel PENDING leave requests');
+  if (existing.status !== ('PENDING' as any) && existing.status !== ('APPROVED_BY_MANAGER' as any)) {
+    throw new Error('Can only cancel PENDING or APPROVED_BY_MANAGER leave requests');
   }
 
   return prisma.leaveRequest.update({
     where: { id: requestId },
-    data: { status: LeaveStatus.CANCELLED },
+    data: { status: 'CANCELLED' as any },
     include: {
       leaveType: true,
       employee: { select: { id: true, name: true, email: true } }
@@ -250,7 +307,7 @@ export async function getEmployeeLeaveCalendar(employeeId: string, year: number,
   const requests = await prisma.leaveRequest.findMany({
     where: {
       employeeId,
-      status: { in: [LeaveStatus.PENDING, LeaveStatus.APPROVED] },
+      status: { in: ['PENDING' as any, 'APPROVED' as any, 'APPROVED_BY_MANAGER' as any] },
       OR: [
         { startDate: { gte: startOfMonth, lte: endOfMonth } },
         { endDate: { gte: startOfMonth, lte: endOfMonth } },
@@ -276,7 +333,7 @@ export async function getEmployeeBalances(employeeId: string, year: number, mont
         where: {
           employeeId,
           leaveTypeId: lt.id,
-          status: { in: [LeaveStatus.PENDING, LeaveStatus.APPROVED] },
+          status: { in: ['PENDING' as any, 'APPROVED' as any, 'APPROVED_BY_MANAGER' as any] },
           startDate: {
             gte: new Date(year, month - 1, 1),
             lt: new Date(year, month, 1)
@@ -310,7 +367,7 @@ export async function getTeamPendingRequests(managerId: string) {
   return prisma.leaveRequest.findMany({
     where: {
       employeeId: { in: teamIds },
-      status: LeaveStatus.PENDING
+      status: 'PENDING' as any
     },
     include: {
       leaveType: true,
@@ -326,7 +383,7 @@ export async function getTeamCalendar(managerId: string | null, year: number, mo
   const endOfMonth = new Date(year, month, 0);
 
   const where: Prisma.LeaveRequestWhereInput = {
-    status: { in: [LeaveStatus.PENDING, LeaveStatus.APPROVED] },
+    status: { in: ['PENDING' as any, 'APPROVED' as any, 'APPROVED_BY_MANAGER' as any] },
     OR: [
       { startDate: { gte: startOfMonth, lte: endOfMonth } },
       { endDate: { gte: startOfMonth, lte: endOfMonth } },
@@ -362,16 +419,46 @@ export async function processLeaveRequest(
 ) {
   const request = await prisma.leaveRequest.findUnique({
     where: { id: requestId },
-    include: { leaveType: true }
+    include: {
+      leaveType: true,
+      employee: { select: { id: true, managerId: true } }
+    }
   });
 
   if (!request) throw new Error('Leave request not found');
-  if (request.status !== LeaveStatus.PENDING) {
-    throw new Error('Can only process PENDING leave requests');
+  if (request.status !== 'PENDING' as any && request.status !== 'APPROVED' as any_BY_MANAGER) {
+    throw new Error('Can only process PENDING or APPROVED_BY_MANAGER leave requests');
   }
 
-  // For Planned leave on approval, verify sufficient balance
-  if (action === 'APPROVE' && request.leaveType.name === 'Planned') {
+  const approver = await prisma.user.findUnique({
+    where: { id: approverId },
+    select: { id: true, role: true }
+  });
+
+  if (!approver) throw new Error('Approver not found');
+
+  let nextStatus: any = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+  let nextStage = request.stage;
+
+  // Multi-stage logic
+  if (action === 'APPROVE') {
+    if (approver.role === 'ADMIN') {
+      // Admin always does final approval
+      nextStatus = 'APPROVED' as any;
+      nextStage = 3;
+    } else if (approver.id === request.employee.managerId) {
+      // Manager approval moves it to Stage 2
+      nextStatus = 'APPROVED_BY_MANAGER' as any;
+      nextStage = 2;
+    }
+  } else {
+    // Rejection is final
+    nextStatus = 'REJECTED' as any;
+    nextStage = 0; // Final state
+  }
+
+  // For final approval of Planned leave, verify sufficient balance
+  if (nextStatus === ('APPROVED' as any) && request.leaveType.name === 'Planned') {
     const requestMonth = request.startDate.getMonth() + 1;
     const requestYear = request.startDate.getFullYear();
     const balance = await getOrCreateBalance(request.employeeId, request.leaveTypeId, requestYear, requestMonth);
@@ -381,7 +468,7 @@ export async function processLeaveRequest(
       where: {
         employeeId: request.employeeId,
         leaveTypeId: request.leaveTypeId,
-        status: LeaveStatus.APPROVED,
+        status: 'APPROVED' as any,
         id: { not: requestId },
         startDate: {
           gte: new Date(requestYear, requestMonth - 1, 1),
@@ -394,16 +481,17 @@ export async function processLeaveRequest(
     const available = balance.balanceDays - usedDays;
 
     if (request.daysRequested > available) {
-      throw new Error(`Insufficient balance for approval. Available: ${available}, Required: ${request.daysRequested}`);
+      throw new Error(`Insufficient balance for final approval. Available: ${available}, Required: ${request.daysRequested}`);
     }
   }
 
   return prisma.leaveRequest.update({
     where: { id: requestId },
     data: {
-      status: action === 'APPROVE' ? LeaveStatus.APPROVED : LeaveStatus.REJECTED,
+      status: nextStatus,
+      stage: nextStage,
       approverId,
-      approvedAt: new Date(),
+      approvedAt: action === 'APPROVE' ? new Date() : null,
       comments: comments || null
     },
     include: {

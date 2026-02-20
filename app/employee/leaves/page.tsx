@@ -45,6 +45,7 @@ export default function EmployeeLeavesPage() {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [calendar, setCalendar] = useState<LeaveRequest[]>([]);
+  const [teamRequests, setTeamRequests] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -59,6 +60,7 @@ export default function EmployeeLeavesPage() {
     endDate: '',
     reason: ''
   });
+  const [suggestion, setSuggestion] = useState<string | null>(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
@@ -85,6 +87,10 @@ export default function EmployeeLeavesPage() {
       // Fetch calendar
       const calRes = await fetch(`/api/employee/leave-calendar?year=${year}&month=${month}`);
       if (calRes.ok) setCalendar(await calRes.json());
+
+      // Fetch team requests (for managers)
+      const teamRes = await fetch('/api/manager/leaves');
+      if (teamRes.ok) setTeamRequests(await teamRes.json());
     } catch (e) {
       setError('Failed to load data');
     } finally {
@@ -160,6 +166,49 @@ export default function EmployeeLeavesPage() {
       setShowForm(false);
       setEditingRequest(null);
       setFormData({ leaveTypeId: '', startDate: '', endDate: '', reason: '' });
+      setSuggestion(null);
+      fetchData();
+    } catch (e: any) {
+      setError(e.message);
+    }
+  }
+
+  // Handle reason change for suggestions
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (formData.reason.length > 5) {
+        const res = await fetch(`/api/leave-suggestions?reason=${encodeURIComponent(formData.reason)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSuggestion(data.suggestion);
+        }
+      } else {
+        setSuggestion(null);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [formData.reason]);
+
+  function applySuggestion(typeName: string) {
+    const type = leaveTypes.find(lt => lt.name === typeName);
+    if (type) {
+      setFormData(prev => ({ ...prev, leaveTypeId: type.id }));
+      setSuggestion(null);
+    }
+  }
+
+  async function handleTeamAction(requestId: string, action: 'APPROVE' | 'REJECT') {
+    try {
+      const res = await fetch('/api/manager/leaves', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to process');
+      }
+      setSuccess(`Team request ${action === 'APPROVE' ? 'approved' : 'rejected'}`);
       fetchData();
     } catch (e: any) {
       setError(e.message);
@@ -193,6 +242,7 @@ export default function EmployeeLeavesPage() {
   function getStatusColor(status: string) {
     switch (status) {
       case 'PENDING': return 'bg-amber-100 text-amber-800';
+      case 'APPROVED_BY_MANAGER': return 'bg-blue-100 text-blue-800';
       case 'APPROVED': return 'bg-emerald-100 text-emerald-800';
       case 'REJECTED': return 'bg-red-100 text-red-800';
       case 'CANCELLED': return 'bg-slate-100 text-slate-800';
@@ -209,7 +259,51 @@ export default function EmployeeLeavesPage() {
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       )}
       {success && (
-        <div className="rounded-lg bg-emerald-50 p-4 text-sm text-emerald-700">{success}</div>
+        <div className="rounded-lg bg-emerald-50 p-4 text-sm text-emerald-700 cursor-pointer" onClick={() => setSuccess('')}>{success}</div>
+      )}
+
+      {/* Team Approvals (Manager View) */}
+      {teamRequests.length > 0 && (
+        <div className="panel border-2 border-blue-200 bg-blue-50/30">
+          <h2 className="mb-4 text-blue-900 flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
+              {teamRequests.length}
+            </span>
+            Team Leave Requests
+          </h2>
+          <div className="space-y-3">
+            {teamRequests.map(req => (
+              <div key={req.id} className="rounded-lg bg-white border border-blue-100 p-4 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-semibold text-slate-900">{req.employee.name}</p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {req.leaveType.name} · {req.daysRequested} day{req.daysRequested > 1 ? 's' : ''}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}
+                    </p>
+                    {req.reason && <p className="text-xs text-slate-600 mt-1 italic">"{req.reason}"</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      className="rounded bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-700"
+                      onClick={() => handleTeamAction(req.id, 'APPROVE')}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      className="rounded bg-red-100 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-200"
+                      onClick={() => handleTeamAction(req.id, 'REJECT')}
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Balance Display */}
@@ -274,11 +368,9 @@ export default function EmployeeLeavesPage() {
           {calendarDays.map((day, idx) => (
             <div
               key={idx}
-              className={`min-h-16 rounded border p-2 ${
-                day.isOtherMonth ? 'bg-slate-50 opacity-50' : 'bg-white'
-              } ${day.isToday ? 'border-emerald-400' : 'border-slate-200'} ${
-                day.isWeekend ? 'bg-slate-50' : ''
-              }`}
+              className={`min-h-16 rounded border p-2 ${day.isOtherMonth ? 'bg-slate-50 opacity-50' : 'bg-white'
+                } ${day.isToday ? 'border-emerald-400' : 'border-slate-200'} ${day.isWeekend ? 'bg-slate-50' : ''
+                }`}
             >
               <div className={`text-sm ${day.isToday ? 'font-bold text-emerald-600' : ''}`}>
                 {day.date}
@@ -369,6 +461,11 @@ export default function EmployeeLeavesPage() {
                 onChange={e => setFormData({ ...formData, reason: e.target.value })}
                 placeholder="Brief reason for leave"
               />
+              {suggestion && (
+                <p className="mt-1 text-xs text-blue-600 animate-pulse cursor-pointer" onClick={() => applySuggestion(suggestion)}>
+                  💡 Suggestion: This looks like a <strong>{suggestion}</strong> leave. Click to apply.
+                </p>
+              )}
             </div>
             <div className="flex gap-2 md:col-span-2">
               <button type="submit" className="btn-success">

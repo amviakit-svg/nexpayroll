@@ -4,6 +4,8 @@ import Providers from '@/components/Providers';
 import { APP_NAME } from '@/lib/brand';
 import AutoToast from '@/components/AutoToast';
 
+import { prisma } from '@/lib/prisma';
+
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ['300', '400', '500', '600', '700', '800', '900'],
@@ -12,10 +14,18 @@ const poppins = Poppins({
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata = {
-  title: APP_NAME,
-  description: `${APP_NAME} payroll portal`
-};
+export async function generateMetadata() {
+  const config = await prisma.tenantConfig.findFirst();
+  const toolName = config?.toolName || APP_NAME;
+
+  return {
+    title: {
+      default: toolName,
+      template: `%s | ${toolName}`
+    },
+    description: `${toolName} payroll portal`
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

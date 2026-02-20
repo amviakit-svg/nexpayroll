@@ -2,13 +2,16 @@ import AdminSidebar from '@/components/AdminSidebar';
 import SignOutButton from '@/components/SignOutButton';
 import { requireAdmin } from '@/lib/session';
 import { APP_NAME } from '@/lib/brand';
+import { prisma } from '@/lib/prisma';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await requireAdmin();
+  const config = await prisma.tenantConfig.findFirst();
+  const toolName = config?.toolName || APP_NAME;
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-7xl gap-6 p-4 md:p-6">
-      <AdminSidebar appName={APP_NAME} />
+      <AdminSidebar appName={toolName} />
 
       <main className="flex-1 space-y-6">
         <header className="panel flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-slate-100 bg-white shadow-sm rounded-2xl">

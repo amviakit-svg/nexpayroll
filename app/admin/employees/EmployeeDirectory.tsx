@@ -189,6 +189,7 @@ export default function EmployeeDirectory({
                             <tr>
                                 <th className="px-8 py-5">Personnel Name</th>
                                 <th className="px-8 py-5">Client Segment</th>
+                                <th className="px-8 py-5">Reporting To</th>
                                 <th className="px-8 py-5">Account Status</th>
                                 <th className="px-8 py-5 text-right">Verification</th>
                             </tr>
@@ -217,6 +218,18 @@ export default function EmployeeDirectory({
                                                 {u.designation || 'Specialized Staff'}
                                             </div>
                                         </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        {u.manager ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-[8px] font-black border border-blue-200 uppercase">
+                                                    {u.manager.name.charAt(0)}
+                                                </div>
+                                                <div className="text-xs font-bold text-slate-700 tracking-tight">{u.manager.name}</div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-[9px] uppercase tracking-widest text-slate-300 font-medium italic">General Staff</div>
+                                        )}
                                     </td>
                                     <td className="px-8 py-6">
                                         <form action={toggleAction}>

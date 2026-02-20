@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
+    { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
     { href: '/admin/employees', label: 'Employees', icon: '👤' },
     { href: '/admin/components', label: 'Salary Structure', icon: '🛠️' },
     { href: '/admin/assignments', label: 'Assignments', icon: '📝' },
     { href: '/admin/payroll', label: 'Payroll', icon: '💰' },
     { href: '/admin/leaves', label: 'Leaves', icon: '📅' },
     { href: '/admin/attendance', label: 'Attendance', icon: '🕒' },
+    { href: '/admin/reports', label: 'Reports', icon: '📈' },
     { href: '/admin/workspace', label: 'Workspace', icon: '🗂️' },
     { href: '/admin/settings', label: 'Settings', icon: '⚙️' }
 ];
@@ -32,11 +34,14 @@ export default function AdminSidebar({ appName }: { appName: string }) {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex items-center gap-4 rounded-xl px-4 py-3 text-sm transition-all duration-300 ${isActive
+                            className={`flex items-center gap-4 rounded-xl px-4 py-3 text-sm transition-all duration-300 relative group ${isActive
                                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
                                 : 'text-slate-500 hover:bg-blue-50 hover:text-blue-700'
                                 }`}
                         >
+                            {isActive && (
+                                <span className="absolute left-0 top-2 bottom-2 w-1.5 bg-blue-300 rounded-r-full group-hover:bg-white transition-colors"></span>
+                            )}
                             <span className="text-lg opacity-80">{item.icon}</span>
                             {item.label}
                         </Link>

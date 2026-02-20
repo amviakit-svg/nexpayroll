@@ -14,6 +14,7 @@ async function updateConfig(formData: FormData) {
     const companyPan = String(formData.get('companyPan') || '');
     const watermarkEnabled = formData.get('watermarkEnabled') === 'on';
     const watermarkText = String(formData.get('watermarkText') || 'NexPayroll');
+    const toolName = String(formData.get('toolName') || 'NexPayroll');
 
     let companyLogoUrl = String(formData.get('existingLogoUrl') || '');
 
@@ -40,6 +41,7 @@ async function updateConfig(formData: FormData) {
         companyAddress,
         companyPan,
         companyLogoUrl,
+        toolName,
         watermarkEnabled,
         watermarkText
     };
@@ -143,6 +145,17 @@ export default async function SettingsPage() {
                                 placeholder="NexPayroll"
                                 className="input w-full"
                             />
+                        </div>
+
+                        <div className="pt-4 border-t">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Tool Name (Header Display)</label>
+                            <input
+                                name="toolName"
+                                defaultValue={config?.toolName || 'NexPayroll'}
+                                placeholder="e.g., Amviak Payroll"
+                                className="input w-full"
+                            />
+                            <p className="mt-1 text-xs text-slate-400 italic">This will update the brand name shown in the sidebar and navigation.</p>
                         </div>
                     </div>
 

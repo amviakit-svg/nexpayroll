@@ -5,17 +5,58 @@ import EmployeeICard from '@/components/EmployeeICard';
 
 export default async function ProfilePage() {
     const session = await requireAuth();
+
     const user = await prisma.user.findUnique({
-        where: { id: session.user.id }
+        where: { id: session.user.id },
+        include: {
+            manager: {
+                select: {
+                    id: true,
+                    name: true,
+                    designation: true,
+                    photoUrl: true,
+                    managerId: true
+                }
+            }
+        }
     });
 
-    const company = await prisma.tenantConfig.findFirst() || {
+    if (!user) return <div>User not found</div>;
+
+    // Fetch Manager's Manager (Grand-manager)
+    let grandManager = null;
+    if (user.manager?.managerId) {
+        grandManager = await prisma.user.findUnique({
+            where: { id: user.manager.managerId },
+            select: { id: true, name: true, designation: true, photoUrl: true }
+        });
+    }
+
+    // Fetch Peers (Same manager, excluding self and manager themselves)
+    const peers = user.managerId ? await prisma.user.findMany({
+        where: {
+            managerId: user.managerId,
+            id: { notIn: [user.id, user.managerId] },
+            isActive: true
+        },
+        select: { id: true, name: true, designation: true, photoUrl: true }
+    }) : [];
+
+    // Fetch Direct Reports (If user is a manager)
+    const directReports = await prisma.user.findMany({
+        where: {
+            managerId: user.id,
+            id: { not: user.managerId || undefined }, // Safety filter: Exclude own manager
+            isActive: true
+        },
+        select: { id: true, name: true, designation: true, photoUrl: true }
+    });
+
+    const config = await prisma.tenantConfig.findFirst() || {
         companyName: 'NexPayroll',
         companyAddress: null,
         companyLogoUrl: null
     };
-
-    if (!user) return <div>User not found</div>;
 
     const sections = [
         {
@@ -54,7 +95,7 @@ export default async function ProfilePage() {
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* Left Side: General Info */}
+                {/* Left Side: General Info & Team */}
                 <div className="lg:col-span-8 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {sections.map((section) => (
@@ -73,6 +114,111 @@ export default async function ProfilePage() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Team & Hierarchy Section */}
+                    <div className="panel bg-white border-slate-100 p-8 rounded-[2.5rem] shadow-sm space-y-10">
+                        <div>
+                            <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                Organizational Hierarchy
+                            </h2>
+
+                            <div className="space-y-4">
+                                {/* Root: Client / Company Name - Styled Light Blue */}
+                                <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-2xl border-2 border-blue-100 shadow-md mb-6 transition-all hover:shadow-lg">
+                                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-blue-200">
+                                        {config.companyName.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] uppercase tracking-[0.3em] text-blue-500 font-black">Parent Organization</div>
+                                        <div className="text-sm font-black text-blue-900 tracking-tight">{config.companyName}</div>
+                                    </div>
+                                </div>
+
+                                {/* RESTORED: Full Management Chain */}
+                                {grandManager && (
+                                    <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100/50 ml-6 relative">
+                                        <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
+                                            {grandManager.photoUrl ? <img src={grandManager.photoUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">{grandManager.name.charAt(0)}</div>}
+                                        </div>
+                                        <div>
+                                            <div className="text-[9px] uppercase tracking-widest text-slate-400 font-black">Chain of Command</div>
+                                            <div className="text-sm font-bold text-slate-800">{grandManager.name}</div>
+                                            <div className="text-[10px] text-slate-500 font-medium">{grandManager.designation}</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {user.manager && (
+                                    <div className={`flex items-center gap-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 ml-12 relative`}>
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden flex-shrink-0">
+                                            {user.manager.photoUrl ? <img src={user.manager.photoUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-blue-400 font-bold">{user.manager.name.charAt(0)}</div>}
+                                        </div>
+                                        <div>
+                                            <div className="text-[9px] uppercase tracking-widest text-blue-600 font-black">Reporting Manager</div>
+                                            <div className="text-sm font-bold text-slate-800">{user.manager.name}</div>
+                                            <div className="text-[10px] text-slate-500 font-medium">{user.manager.designation}</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className={`flex items-center gap-4 p-5 bg-blue-600 rounded-2xl border border-blue-700 shadow-xl shadow-blue-100 ml-20 relative`}>
+                                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md overflow-hidden flex-shrink-0 p-1">
+                                        {user.photoUrl ? <img src={user.photoUrl} alt="" className="w-full h-full rounded-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-white font-black">{user.name.charAt(0)}</div>}
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] uppercase tracking-widest text-blue-100 font-black">Active Position</div>
+                                        <div className="text-base font-black text-white">{user.name}</div>
+                                        <div className="text-[10px] text-blue-50 font-medium">{user.designation}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {peers.length > 0 && (
+                            <div>
+                                <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    Team Members (Peers)
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {peers.map(peer => (
+                                        <div key={peer.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100/50 group hover:bg-white hover:shadow-sm transition-all">
+                                            <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden flex-shrink-0 group-hover:ring-2 group-hover:ring-emerald-100 transition-all">
+                                                {peer.photoUrl ? <img src={peer.photoUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-xs">{peer.name.charAt(0)}</div>}
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-bold text-slate-800">{peer.name}</div>
+                                                <div className="text-[9px] text-slate-500 font-medium tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">{peer.designation}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {directReports.length > 0 && (
+                            <div>
+                                <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                                    My Team
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {directReports.map(report => (
+                                        <div key={report.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100/50 group hover:bg-white hover:shadow-sm transition-all">
+                                            <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden flex-shrink-0 group-hover:ring-2 group-hover:ring-orange-100 transition-all">
+                                                {report.photoUrl ? <img src={report.photoUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-xs">{report.name.charAt(0)}</div>}
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-bold text-slate-800">{report.name}</div>
+                                                <div className="text-[9px] text-slate-500 font-medium tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">{report.designation}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="panel bg-amber-50 border-amber-100 p-4 rounded-2xl flex items-start gap-3">
@@ -106,9 +252,9 @@ export default async function ProfilePage() {
                             pfNumber: user.pfNumber,
                             pan: user.pan
                         }} company={{
-                            companyName: company.companyName,
-                            companyAddress: company.companyAddress,
-                            companyLogoUrl: company.companyLogoUrl
+                            companyName: config.companyName,
+                            companyAddress: config.companyAddress,
+                            companyLogoUrl: config.companyLogoUrl
                         }} />
                     </div>
                 </div>

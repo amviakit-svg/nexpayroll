@@ -23,7 +23,8 @@ interface LeaveRequest {
   startDate: string;
   endDate: string;
   daysRequested: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  stage: number;
+  status: 'PENDING' | 'APPROVED_BY_MANAGER' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
   reason: string | null;
   requestedAt: string;
   approver: { name: string } | null;
@@ -77,14 +78,17 @@ export default function AdminLeavesPage() {
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [balanceForm, setBalanceForm] = useState({ leaveTypeId: '', amount: 0, action: 'SET' });
 
+  // Conflict state
+  const [conflicts, setConflicts] = useState<Record<string, { absentCount: number, totalTeamSize: number }>>({});
+
   useEffect(() => {
     fetchData();
   }, [activeTab, calYear, calMonth]);
 
   useEffect(() => {
-      if (activeTab === 'balances' && selectedUser) {
-          fetchBalances();
-      }
+    if (activeTab === 'balances' && selectedUser) {
+      fetchBalances();
+    }
   }, [selectedUser, activeTab, calYear, calMonth]);
 
   async function fetchData() {
@@ -97,7 +101,21 @@ export default function AdminLeavesPage() {
 
       if (activeTab === 'requests') {
         const reqRes = await fetch('/api/admin/leaves');
-        if (reqRes.ok) setRequests(await reqRes.json());
+        if (reqRes.ok) {
+          const fetchedRequests = await reqRes.json();
+          setRequests(fetchedRequests);
+
+          // Fetch conflicts for pending requests
+          fetchedRequests.forEach(async (req: LeaveRequest) => {
+            if (req.status === 'PENDING' || req.status === 'APPROVED_BY_MANAGER') {
+              const confRes = await fetch(`/api/leave-conflicts?employeeId=${req.employee.id}&startDate=${req.startDate}&endDate=${req.endDate}`);
+              if (confRes.ok) {
+                const confData = await confRes.json();
+                setConflicts(prev => ({ ...prev, [req.id]: confData }));
+              }
+            }
+          });
+        }
       }
 
       if (activeTab === 'holidays') {
@@ -111,8 +129,8 @@ export default function AdminLeavesPage() {
       }
 
       if (activeTab === 'balances') {
-          const uRes = await fetch('/api/admin/users');
-          if (uRes.ok) setUsers(await uRes.json());
+        const uRes = await fetch('/api/admin/users');
+        if (uRes.ok) setUsers(await uRes.json());
       }
     } catch (e) {
       setError('Failed to load data');
@@ -122,9 +140,9 @@ export default function AdminLeavesPage() {
   }
 
   async function fetchBalances() {
-      if (!selectedUser) return;
-      const res = await fetch(`/api/admin/leaves/balance?employeeId=${selectedUser}&year=${calYear}&month=${calMonth}`);
-      if (res.ok) setBalances(await res.json());
+    if (!selectedUser) return;
+    const res = await fetch(`/api/admin/leaves/balance?employeeId=${selectedUser}&year=${calYear}&month=${calMonth}`);
+    if (res.ok) setBalances(await res.json());
   }
 
   async function saveType(e: React.FormEvent) {
@@ -235,29 +253,29 @@ export default function AdminLeavesPage() {
   }
 
   async function updateBalance(e: React.FormEvent) {
-      e.preventDefault();
-      if (!selectedUser || !balanceForm.leaveTypeId) return;
-      try {
-          const res = await fetch('/api/admin/leaves/balance', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  employeeId: selectedUser,
-                  leaveTypeId: balanceForm.leaveTypeId,
-                  year: calYear,
-                  month: calMonth,
-                  amount: balanceForm.amount,
-                  action: balanceForm.action
-              })
-          });
-          if (!res.ok) throw new Error('Failed to update balance');
-          setSuccess('Balance updated');
-          fetchBalances();
-          // Reset amount but keep user/type selected
-          setBalanceForm(prev => ({ ...prev, amount: 0, action: 'SET' }));
-      } catch (e: any) {
-          setError(e.message);
-      }
+    e.preventDefault();
+    if (!selectedUser || !balanceForm.leaveTypeId) return;
+    try {
+      const res = await fetch('/api/admin/leaves/balance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId: selectedUser,
+          leaveTypeId: balanceForm.leaveTypeId,
+          year: calYear,
+          month: calMonth,
+          amount: balanceForm.amount,
+          action: balanceForm.action
+        })
+      });
+      if (!res.ok) throw new Error('Failed to update balance');
+      setSuccess('Balance updated');
+      fetchBalances();
+      // Reset amount but keep user/type selected
+      setBalanceForm(prev => ({ ...prev, amount: 0, action: 'SET' }));
+    } catch (e: any) {
+      setError(e.message);
+    }
   }
 
   function generateCalendar() {
@@ -294,6 +312,7 @@ export default function AdminLeavesPage() {
   function getStatusColor(status: string) {
     switch (status) {
       case 'PENDING': return 'bg-amber-100 text-amber-800';
+      case 'APPROVED_BY_MANAGER': return 'bg-blue-100 text-blue-800';
       case 'APPROVED': return 'bg-emerald-100 text-emerald-800';
       case 'REJECTED': return 'bg-red-100 text-red-800';
       case 'CANCELLED': return 'bg-slate-100 text-slate-800';
@@ -304,8 +323,8 @@ export default function AdminLeavesPage() {
   const calendarDays = generateCalendar();
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  const pendingRequests = requests.filter(r => r.status === 'PENDING');
-  const otherRequests = requests.filter(r => r.status !== 'PENDING');
+  const pendingRequests = requests.filter(r => r.status === 'PENDING' || r.status === 'APPROVED_BY_MANAGER');
+  const otherRequests = requests.filter(r => r.status !== 'PENDING' && r.status !== 'APPROVED_BY_MANAGER');
 
   return (
     <div className="space-y-6">
@@ -354,6 +373,22 @@ export default function AdminLeavesPage() {
                       {new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}
                     </p>
                     {req.reason && <p className="text-sm text-slate-500">Reason: {req.reason}</p>}
+
+                    {/* Conflict Widget */}
+                    {conflicts[req.id] && (
+                      <div className="mt-2 flex items-center gap-2 rounded-md bg-white p-2 text-xs shadow-sm border border-slate-200">
+                        <div className={`h-2 w-2 rounded-full ${conflicts[req.id].absentCount / conflicts[req.id].totalTeamSize > 0.5 ? 'bg-red-500' :
+                            conflicts[req.id].absentCount / conflicts[req.id].totalTeamSize > 0.2 ? 'bg-amber-500' : 'bg-emerald-500'
+                          }`} />
+                        <span className="font-medium">Team Availability:</span>
+                        <span>{conflicts[req.id].absentCount} of {conflicts[req.id].totalTeamSize} away</span>
+                        {conflicts[req.id].absentCount > 1 && <span className="text-red-600 font-bold ml-1">(! Conflict)</span>}
+                      </div>
+                    )}
+
+                    {req.status === 'APPROVED_BY_MANAGER' && (
+                      <p className="mt-1 text-xs font-semibold text-blue-600">✓ Approved by Manager - Awaiting Admin Sign-off</p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-2">
                     <input
@@ -634,11 +669,9 @@ export default function AdminLeavesPage() {
               {calendarDays.map((day, idx) => (
                 <div
                   key={idx}
-                  className={`min-h-20 rounded border p-1 ${
-                    day.isOtherMonth ? 'bg-slate-50 opacity-50' : 'bg-white'
-                  } ${day.isToday ? 'border-emerald-400' : 'border-slate-200'} ${
-                    day.isWeekend ? 'bg-slate-50' : ''
-                  }`}
+                  className={`min-h-20 rounded border p-1 ${day.isOtherMonth ? 'bg-slate-50 opacity-50' : 'bg-white'
+                    } ${day.isToday ? 'border-emerald-400' : 'border-slate-200'} ${day.isWeekend ? 'bg-slate-50' : ''
+                    }`}
                 >
                   <div className={`text-sm ${day.isToday ? 'font-bold text-emerald-600' : ''}`}>
                     {day.date}
@@ -675,105 +708,105 @@ export default function AdminLeavesPage() {
 
         {activeTab === 'balances' && (
           <div className="space-y-6">
-             <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Manage Leave Balances</h2>
-                <div className="flex items-center gap-2">
-                    <button
-                    className="btn-secondary px-3 py-1"
-                    onClick={() => setCurrentDate(new Date(calYear, calMonth - 2, 1))}
-                    >
-                    ←
-                    </button>
-                    <span className="min-w-32 text-center font-medium">
-                    {monthNames[calMonth - 1]} {calYear}
-                    </span>
-                    <button
-                    className="btn-secondary px-3 py-1"
-                    onClick={() => setCurrentDate(new Date(calYear, calMonth, 1))}
-                    >
-                    →
-                    </button>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Manage Leave Balances</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  className="btn-secondary px-3 py-1"
+                  onClick={() => setCurrentDate(new Date(calYear, calMonth - 2, 1))}
+                >
+                  ←
+                </button>
+                <span className="min-w-32 text-center font-medium">
+                  {monthNames[calMonth - 1]} {calYear}
+                </span>
+                <button
+                  className="btn-secondary px-3 py-1"
+                  onClick={() => setCurrentDate(new Date(calYear, calMonth, 1))}
+                >
+                  →
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-4 items-center">
+              <select
+                value={selectedUser}
+                onChange={e => setSelectedUser(e.target.value)}
+                className="input max-w-xs"
+              >
+                <option value="">Select Employee</option>
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {selectedUser && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+                  <h3 className="font-semibold mb-3 text-sm text-slate-500 uppercase">Current Balances</h3>
+                  {balances.length === 0 ? <p className="text-sm">No balances recorded for this month.</p> : (
+                    <ul className="space-y-2">
+                      {balances.map(b => (
+                        <li key={b.id} className="flex justify-between items-center p-2 bg-white rounded border border-slate-100">
+                          <span className="font-medium">{b.leaveType.name}</span>
+                          <span className="font-bold text-lg">{b.balanceDays}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-             </div>
-             
-             <div className="flex gap-4 items-center">
-                 <select 
-                    value={selectedUser} 
-                    onChange={e => setSelectedUser(e.target.value)}
-                    className="input max-w-xs"
-                 >
-                     <option value="">Select Employee</option>
-                     {users.map(u => (
-                         <option key={u.id} value={u.id}>{u.name}</option>
-                     ))}
-                 </select>
-             </div>
 
-             {selectedUser && (
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-                         <h3 className="font-semibold mb-3 text-sm text-slate-500 uppercase">Current Balances</h3>
-                         {balances.length === 0 ? <p className="text-sm">No balances recorded for this month.</p> : (
-                             <ul className="space-y-2">
-                                 {balances.map(b => (
-                                     <li key={b.id} className="flex justify-between items-center p-2 bg-white rounded border border-slate-100">
-                                         <span className="font-medium">{b.leaveType.name}</span>
-                                         <span className="font-bold text-lg">{b.balanceDays}</span>
-                                     </li>
-                                 ))}
-                             </ul>
-                         )}
-                     </div>
+                <div className="border border-slate-200 rounded-lg p-4">
+                  <h3 className="font-semibold mb-3 text-sm text-slate-500 uppercase">Adjust Balance</h3>
+                  <form onSubmit={updateBalance} className="space-y-3">
+                    <div>
+                      <label className="text-xs text-slate-500">Leave Type</label>
+                      <select
+                        className="input w-full"
+                        value={balanceForm.leaveTypeId}
+                        onChange={e => setBalanceForm({ ...balanceForm, leaveTypeId: e.target.value })}
+                        required
+                      >
+                        <option value="">Select Leave Type</option>
+                        {leaveTypes.map(lt => (
+                          <option key={lt.id} value={lt.id}>{lt.name}</option>
+                        ))}
+                      </select>
+                    </div>
 
-                     <div className="border border-slate-200 rounded-lg p-4">
-                         <h3 className="font-semibold mb-3 text-sm text-slate-500 uppercase">Adjust Balance</h3>
-                         <form onSubmit={updateBalance} className="space-y-3">
-                             <div>
-                                 <label className="text-xs text-slate-500">Leave Type</label>
-                                 <select 
-                                    className="input w-full"
-                                    value={balanceForm.leaveTypeId}
-                                    onChange={e => setBalanceForm({...balanceForm, leaveTypeId: e.target.value})}
-                                    required
-                                 >
-                                     <option value="">Select Leave Type</option>
-                                     {leaveTypes.map(lt => (
-                                         <option key={lt.id} value={lt.id}>{lt.name}</option>
-                                     ))}
-                                 </select>
-                             </div>
-                             
-                             <div className="grid grid-cols-2 gap-2">
-                                 <div>
-                                     <label className="text-xs text-slate-500">Action</label>
-                                     <select 
-                                        className="input w-full"
-                                        value={balanceForm.action}
-                                        onChange={e => setBalanceForm({...balanceForm, action: e.target.value})}
-                                     >
-                                         <option value="SET">Set To</option>
-                                         <option value="CREDIT">Credit (+)</option>
-                                         <option value="DEBIT">Debit (-)</option>
-                                     </select>
-                                 </div>
-                                 <div>
-                                     <label className="text-xs text-slate-500">Amount (Days)</label>
-                                     <input 
-                                        type="number" 
-                                        step="0.5"
-                                        className="input w-full"
-                                        value={balanceForm.amount}
-                                        onChange={e => setBalanceForm({...balanceForm, amount: parseFloat(e.target.value)})}
-                                        required
-                                     />
-                                 </div>
-                             </div>
-                             
-                             <button className="btn-primary w-full mt-2">Update Balance</button>
-                         </form>
-                     </div>
-                 </div>
-             )}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-slate-500">Action</label>
+                        <select
+                          className="input w-full"
+                          value={balanceForm.action}
+                          onChange={e => setBalanceForm({ ...balanceForm, action: e.target.value })}
+                        >
+                          <option value="SET">Set To</option>
+                          <option value="CREDIT">Credit (+)</option>
+                          <option value="DEBIT">Debit (-)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500">Amount (Days)</label>
+                        <input
+                          type="number"
+                          step="0.5"
+                          className="input w-full"
+                          value={balanceForm.amount}
+                          onChange={e => setBalanceForm({ ...balanceForm, amount: parseFloat(e.target.value) })}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <button className="btn-primary w-full mt-2">Update Balance</button>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

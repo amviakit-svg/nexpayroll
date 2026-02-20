@@ -41,6 +41,8 @@ export async function createEmployee(formData: FormData) {
         return { error: 'Failed to create user' };
     }
     revalidatePath('/admin/employees');
+    revalidatePath('/admin/dashboard');
+    revalidatePath('/employee/profile');
     redirect('/admin/employees?success=true&message=User created successfully');
 }
 
@@ -96,5 +98,7 @@ export async function editEmployee(formData: FormData) {
     }
 
     revalidatePath('/admin/employees');
+    revalidatePath('/admin/dashboard');
+    revalidatePath('/employee/profile');
     redirect('/admin/employees?success=true&message=User details updated');
 }

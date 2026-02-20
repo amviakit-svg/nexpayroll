@@ -54,7 +54,6 @@ model TenantConfig {
   companyAddress   String?
   companyPan       String?
   companyLogoUrl   String?
-  toolName         String   @default("NexPayroll")
   updatedAt        DateTime @updatedAt
   watermarkEnabled Boolean  @default(false)
   watermarkText    String   @default("NexPayroll")
