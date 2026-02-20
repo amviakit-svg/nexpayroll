@@ -47,10 +47,6 @@ call npm run prisma:seed
 echo 🏗️  Building the Next.js optimized production app...
 call npm run build
 
-:: 7. Prune Development Tools
-echo 🧹 Removing development tools (Pruning)...
-call npm prune --production
-
 echo ===================================================
 echo 🎉 Deployment setup completed successfully!
 echo ➡️  Start the application with: npm run start

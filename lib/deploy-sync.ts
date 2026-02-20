@@ -90,11 +90,6 @@ export function getDeploymentCommands() {
             id: 'build',
             label: 'Rebuilding Optimized App',
             command: 'npm run build'
-        },
-        {
-            id: 'prune',
-            label: 'Cleaning Development Cruft',
-            command: 'npm prune --production'
         }
     ];
 }
