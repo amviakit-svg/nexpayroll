@@ -41,7 +41,7 @@ sleep 5
 
 # 3. Install Dependencies
 echo "📦 Installing Node.js dependencies..."
-npm install
+npm install --include=dev
 
 # 4. Apply Database Migrations
 echo "🗄️  Applying database migrations (Prisma)..."
@@ -54,6 +54,10 @@ npm run prisma:seed
 # 6. Build the Application
 echo "🏗️  Building the Next.js optimized production app..."
 npm run build
+
+# 7. Prune Development Tools
+echo "🧹 Removing development tools (Pruning)..."
+npm prune --production
 
 echo "==================================================="
 echo "🎉 Deployment setup completed successfully!"

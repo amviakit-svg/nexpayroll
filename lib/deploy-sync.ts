@@ -79,7 +79,7 @@ export function getDeploymentCommands() {
         {
             id: 'install',
             label: 'Installing Dependencies',
-            command: 'npm install'
+            command: 'npm install --include=dev'
         },
         {
             id: 'migrate',
@@ -90,6 +90,11 @@ export function getDeploymentCommands() {
             id: 'build',
             label: 'Rebuilding Optimized App',
             command: 'npm run build'
+        },
+        {
+            id: 'prune',
+            label: 'Cleaning Development Cruft',
+            command: 'npm prune --production'
         }
     ];
 }

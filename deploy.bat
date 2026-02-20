@@ -33,7 +33,7 @@ timeout /t 5 /nobreak > NUL
 
 :: 3. Install Node.js Dependencies
 echo 📦 Installing Node.js dependencies...
-call npm install
+call npm install --include=dev
 
 :: 4. Apply Database Migrations
 echo 🗄️  Applying database migrations (Prisma)...
@@ -46,6 +46,10 @@ call npm run prisma:seed
 :: 6. Build the Application
 echo 🏗️  Building the Next.js optimized production app...
 call npm run build
+
+:: 7. Prune Development Tools
+echo 🧹 Removing development tools (Pruning)...
+call npm prune --production
 
 echo ===================================================
 echo 🎉 Deployment setup completed successfully!
