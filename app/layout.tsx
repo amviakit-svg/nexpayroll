@@ -15,7 +15,12 @@ const poppins = Poppins({
 const inter = Inter({ subsets: ["latin"] });
 
 export async function generateMetadata() {
-  const config = await prisma.tenantConfig.findFirst();
+  let config = null;
+  try {
+    config = await prisma.tenantConfig.findFirst();
+  } catch (error) {
+    // Ignore error during static generation if db table does not exist
+  }
   const toolName = config?.toolName || APP_NAME;
 
   return {

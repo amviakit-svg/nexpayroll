@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
         const isManagerRequest = source === 'manager' || (session.user.role === 'MANAGER' as any);
 
         // 3. Fetch Payroll (Only for Admin or Self, NOT for Manager viewing team)
-        let payroll = [];
+        let payroll: any[] = [];
         if (!isManagerRequest || employeeId === session.user.id) {
             payroll = await prisma.payrollEntry.findMany({
                 where: {

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/session';
 import { generateICardPdf } from '@/lib/icard-pdf';
@@ -40,7 +41,7 @@ export async function GET() {
 
         const safeName = user.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-        return new NextResponse(pdfBuffer, {
+        return new NextResponse(pdfBuffer as unknown as BodyInit, {
             headers: {
                 'Content-Type': 'application/pdf',
                 'Content-Disposition': `attachment; filename="icard_${safeName}.pdf"`
