@@ -28,7 +28,19 @@ export async function generateMetadata() {
       default: toolName,
       template: `%s | ${toolName}`
     },
-    description: `${toolName} payroll portal`
+    description: `${toolName} payroll portal`,
+    manifest: '/manifest.json',
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'default',
+      title: toolName,
+    },
+  };
+}
+
+export function generateViewport() {
+  return {
+    themeColor: '#2563eb',
   };
 }
 
