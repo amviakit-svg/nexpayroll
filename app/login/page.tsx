@@ -3,7 +3,12 @@ import { prisma } from '@/lib/prisma';
 import LoginForm from './LoginForm';
 
 export default async function LoginPage() {
-  const config = await prisma.setting.findFirst();
+  let config = null;
+  try {
+    config = await prisma.tenantConfig.findFirst();
+  } catch (err) {
+    // Ignore error if run during strict static build process
+  }
   const toolName = config?.toolName || APP_NAME;
 
   return (
