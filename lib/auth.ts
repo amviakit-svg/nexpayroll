@@ -33,6 +33,13 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Bypass strict NEXTAUTH_URL domain checking.
+      // This allows the client to explicitly dictate the redirect destination 
+      // (like a dynamic local network IP) rather than falling back to localhost.
+      if (url.startsWith('/')) return `${baseUrl}${url}`;
+      return url;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as any).role;
