@@ -2,7 +2,7 @@
     "name": "NexPayroll",
     "short_name": "NexPayroll",
     "description": "Enterprise Payroll Management Tool",
-    "start_url": "/login",
+    "start_url": "/",
     "id": "/",
     "display": "standalone",
     "background_color": "#ffffff",
