@@ -92,7 +92,7 @@ export default function PayrollRunner({
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm shadow-sm flex flex-col items-center justify-center gap-2">
           <p className="text-slate-500 italic text-center">
             Formula: <br />
-            <span className="font-mono text-slate-700">Leave Deduction = ((Fixed Gross - Fixed Deductions) / 30) * Leaves</span>
+            <span className="font-mono text-slate-700">Leave Deduction = (Fixed Gross / 30) * Leaves</span>
           </p>
           <p className="text-slate-500 italic text-center">
             <span className="font-mono text-slate-700">Final Payable = Net Monthly Salary - Leave Deduction</span>

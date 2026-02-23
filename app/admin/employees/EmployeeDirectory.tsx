@@ -103,7 +103,32 @@ export default function EmployeeDirectory({
                                     <SectionHeader title={getSectionName('basic', 'Basic Credentials')} />
                                     <Field label="Full Name" name="name" required placeholder="John Doe" />
                                     <Field label="Email Address" name="email" type="email" required placeholder="john@company.com" />
-                                    <Field label="Initial Password" name="password" required placeholder="••••••••" />
+                                    <div className="space-y-2 relative">
+                                        <label className="text-[10px] uppercase tracking-widest text-slate-400">Initial Password</label>
+                                        <div className="relative">
+                                            <input
+                                                id="password-input"
+                                                type="text"
+                                                name="password"
+                                                required
+                                                placeholder="••••••••"
+                                                className="input w-full h-12 bg-slate-50 border-slate-100 focus:border-blue-200 focus:bg-white transition-all text-sm text-slate-900 placeholder:text-slate-300 rounded-xl pr-20"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+                                                    let pass = "";
+                                                    for (let i = 0; i < 10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+                                                    const input = document.getElementById('password-input') as HTMLInputElement;
+                                                    if (input) input.value = pass;
+                                                }}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-3 rounded-lg bg-blue-100 text-blue-700 text-[9px] font-black uppercase tracking-widest hover:bg-blue-200 transition-colors"
+                                            >
+                                                Generate
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">System Role</label>
                                         <select name="role" className="input w-full h-12 bg-slate-50 focus:bg-white border-transparent focus:border-slate-200 transition-all font-bold">

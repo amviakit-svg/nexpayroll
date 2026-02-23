@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/session';
 import PhotoUpload from '@/components/PhotoUpload';
 import EmployeeICard from '@/components/EmployeeICard';
+import PasswordResetForm from '@/components/PasswordResetForm';
 
 export default async function ProfilePage() {
     const session = await requireAuth();
@@ -228,6 +229,9 @@ export default async function ProfilePage() {
                             If you notice any discrepancies in your payroll or personal records, please reach out to the HR department.
                         </p>
                     </div>
+
+                    {/* Password Reset Section */}
+                    <PasswordResetForm />
                 </div>
 
                 {/* Right Side: I-Card & Photo */}
