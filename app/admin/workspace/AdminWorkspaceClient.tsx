@@ -14,6 +14,7 @@ interface Folder {
     id: string;
     name: string;
     parentId: string | null;
+    createdAt: string;
     _count?: { documents: number; children: number };
 }
 
@@ -42,6 +43,7 @@ export default function AdminWorkspaceClient({ employees }: { employees: Employe
     const [sharingDoc, setSharingDoc] = useState<Document | null>(null);
     const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'name', direction: 'asc' });
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -202,8 +204,34 @@ export default function AdminWorkspaceClient({ employees }: { employees: Employe
         }
     };
 
+    const handleSort = (key: string) => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    };
+
+    const sortData = <T extends any>(data: T[], key: string, direction: 'asc' | 'desc') => {
+        return [...data].sort((a, b) => {
+            let valA: any = a[key as keyof T];
+            let valB: any = b[key as keyof T];
+
+            if (key === 'type') {
+                valA = (a as any).fileType || 'folder';
+                valB = (b as any).fileType || 'folder';
+            }
+
+            if (valA < valB) return direction === 'asc' ? -1 : 1;
+            if (valA > valB) return direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    };
+
     const filteredDocs = documents.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase()));
     const filteredFolders = folders.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const sortedFolders = sortData(filteredFolders, sortConfig.key === 'fileSize' ? 'name' : sortConfig.key, sortConfig.direction);
+    const sortedDocs = sortData(filteredDocs, sortConfig.key, sortConfig.direction);
 
     const getFileIcon = (type: string) => {
         if (type.includes('pdf')) return '📕';
@@ -284,15 +312,23 @@ export default function AdminWorkspaceClient({ employees }: { employees: Employe
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-slate-50 bg-slate-50/30">
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-16 text-center">Icon</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Name</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Size</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-16 text-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('type')}>
+                                        Type {sortConfig.key === 'type' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('name')}>
+                                        Name {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('fileSize')}>
+                                        Size {sortConfig.key === 'fileSize' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('createdAt')}>
+                                        Created At {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                    </th>
                                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {filteredFolders.map(folder => (
+                                {sortedFolders.map(folder => (
                                     <tr
                                         key={folder.id}
                                         className="group hover:bg-blue-50/30 transition-colors cursor-pointer"
@@ -306,7 +342,9 @@ export default function AdminWorkspaceClient({ employees }: { employees: Employe
                                             </p>
                                         </td>
                                         <td className="px-6 py-4 text-xs font-medium text-slate-400">--</td>
-                                        <td className="px-6 py-4 text-xs font-medium text-slate-400">Folder</td>
+                                        <td className="px-6 py-4 text-xs font-medium text-slate-400">
+                                            {folder.createdAt ? format(new Date(folder.createdAt), 'dd MMM yyyy, hh:mm a') : 'Recently'}
+                                        </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
@@ -323,7 +361,7 @@ export default function AdminWorkspaceClient({ employees }: { employees: Employe
                                         </td>
                                     </tr>
                                 ))}
-                                {filteredDocs.map(doc => (
+                                {sortedDocs.map(doc => (
                                     <tr key={doc.id} className="group hover:bg-emerald-50/20 transition-colors">
                                         <td className="px-6 py-4 text-2xl relative text-center">
                                             {getFileIcon(doc.fileType)}
@@ -341,7 +379,7 @@ export default function AdminWorkspaceClient({ employees }: { employees: Employe
                                             {formatSize(doc.fileSize)}
                                         </td>
                                         <td className="px-6 py-4 text-xs font-medium text-slate-400">
-                                            {format(new Date(doc.createdAt), 'dd MMM yyyy')}
+                                            {format(new Date(doc.createdAt), 'dd MMM yyyy, hh:mm a')}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-1.5">

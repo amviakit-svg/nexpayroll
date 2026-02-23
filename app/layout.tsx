@@ -5,6 +5,7 @@ import { APP_NAME } from '@/lib/brand';
 import AutoToast from '@/components/AutoToast';
 
 import { prisma } from '@/lib/prisma';
+import IdleTimer from '@/components/IdleTimer';
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -32,12 +33,21 @@ export async function generateMetadata() {
   };
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  let timeout = 5;
+  try {
+    const config = await prisma.tenantConfig.findFirst();
+    if (config?.idleTimeoutMinutes) timeout = config.idleTimeoutMinutes;
+  } catch (e) {
+    // Default to 5 mins if DB table doesn't exist yet
+  }
+
   return (
     <html lang="en">
       <body className={`${poppins.variable} font-sans`}>
         <Providers>
           <AutoToast />
+          <IdleTimer timeoutMinutes={timeout} />
           {children}
         </Providers>
       </body>

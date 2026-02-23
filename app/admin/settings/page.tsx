@@ -15,6 +15,7 @@ async function updateConfig(formData: FormData) {
     const watermarkEnabled = formData.get('watermarkEnabled') === 'on';
     const watermarkText = String(formData.get('watermarkText') || 'NexPayroll');
     const toolName = String(formData.get('toolName') || 'NexPayroll');
+    const idleTimeoutMinutes = parseInt(String(formData.get('idleTimeoutMinutes') || '5'), 10);
 
     let companyLogoUrl = String(formData.get('existingLogoUrl') || '');
 
@@ -42,6 +43,7 @@ async function updateConfig(formData: FormData) {
         companyPan,
         companyLogoUrl,
         toolName,
+        idleTimeoutMinutes,
         watermarkEnabled,
         watermarkText
     };
@@ -156,6 +158,19 @@ export default async function SettingsPage() {
                                 className="input w-full"
                             />
                             <p className="mt-1 text-xs text-slate-400 italic">This will update the brand name shown in the sidebar and navigation.</p>
+                        </div>
+
+                        <div className="pt-4 border-t">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Idle Session Timeout (Minutes)</label>
+                            <input
+                                name="idleTimeoutMinutes"
+                                type="number"
+                                min="1"
+                                max="1440"
+                                defaultValue={config?.idleTimeoutMinutes ?? 5}
+                                className="input w-full"
+                            />
+                            <p className="mt-1 text-xs text-slate-400 italic">Automatically logout users after this period of inactivity. Default is 5 minutes.</p>
                         </div>
                     </div>
 

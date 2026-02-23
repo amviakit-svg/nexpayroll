@@ -14,13 +14,14 @@ export async function buildPayrollPreview(
   if (existing?.status === 'SUBMITTED') throw new Error('Payroll already submitted and locked for this month');
 
   const employees = await prisma.user.findMany({ where: { role: 'EMPLOYEE', isActive: true }, orderBy: { name: 'asc' } });
-  const variableComponents = await prisma.salaryComponent.findMany({ where: { isActive: true, isVariable: true }, orderBy: { name: 'asc' } });
+  const variableComponents = await prisma.salaryComponent.findMany({ where: { isActive: true, isVariable: true }, orderBy: { sortOrder: 'asc' } });
 
   const rows = await Promise.all(
     employees.map(async (employee) => {
       const fixedValues = await prisma.employeeComponentValue.findMany({
         where: { employeeId: employee.id, isActive: true, component: { isActive: true, isVariable: false } },
-        include: { component: true }
+        include: { component: true },
+        orderBy: { component: { sortOrder: 'asc' } }
       });
 
       const variableValues = variableComponents.map((component) => ({
@@ -137,7 +138,16 @@ export async function generatePayslipForEntry(entryId: string) {
     include: {
       employee: true,
       payrollCycle: true,
-      lineItems: true
+      lineItems: {
+        include: {
+          component: true
+        },
+        orderBy: {
+          component: {
+            sortOrder: 'asc'
+          }
+        }
+      }
     }
   });
 
