@@ -59,7 +59,7 @@ export default async function EditEmployeeAssignmentsPage({ params }: { params: 
 
     const allFixedComponents = await prisma.salaryComponent.findMany({
         where: { isActive: true, isVariable: false },
-        orderBy: { name: 'asc' }
+        orderBy: { sortOrder: 'asc' }
     });
 
     const earnings = allFixedComponents.filter(c => c.type === ComponentType.EARNING);

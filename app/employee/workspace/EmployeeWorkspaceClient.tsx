@@ -20,6 +20,7 @@ export default function EmployeeWorkspaceClient() {
     const [loading, setLoading] = useState(true);
     const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'sharedAt', direction: 'desc' });
 
     useEffect(() => {
         fetchDocs();
@@ -53,7 +54,31 @@ export default function EmployeeWorkspaceClient() {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
+    const handleSort = (key: string) => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    };
+
+    const sortData = <T extends any>(data: T[], key: string, direction: 'asc' | 'desc') => {
+        return [...data].sort((a, b) => {
+            let valA: any = a[key as keyof T];
+            let valB: any = b[key as keyof T];
+
+            if (key === 'fileType') {
+                valA = a.fileType || '';
+                valB = b.fileType || '';
+            }
+
+            if (valA < valB) return direction === 'asc' ? -1 : 1;
+            if (valA > valB) return direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    };
+
     const filteredDocs = documents.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const sortedDocs = sortData(filteredDocs, sortConfig.key, sortConfig.direction);
     const recentThreshold = subHours(new Date(), 48);
 
     return (
@@ -92,15 +117,23 @@ export default function EmployeeWorkspaceClient() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-slate-50 bg-slate-50/20">
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-16 text-center">Icon</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Document Name</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Size</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Shared At</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-16 text-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('fileType')}>
+                                        Type {sortConfig.key === 'fileType' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('name')}>
+                                        Document Name {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('fileSize')}>
+                                        Size {sortConfig.key === 'fileSize' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('sharedAt')}>
+                                        Shared At {sortConfig.key === 'sharedAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                    </th>
                                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {filteredDocs.map(doc => {
+                                {sortedDocs.map(doc => {
                                     const isNew = isAfter(new Date(doc.sharedAt), recentThreshold);
                                     return (
                                         <tr key={doc.id} className="group hover:bg-white transition-all duration-300">
@@ -128,7 +161,7 @@ export default function EmployeeWorkspaceClient() {
                                             </td>
                                             <td className="px-6 py-5 text-center whitespace-nowrap">
                                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                                    {format(new Date(doc.sharedAt), 'dd MMM yyyy')}
+                                                    {format(new Date(doc.sharedAt), 'dd MMM yyyy, hh:mm a')}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5 text-right">
