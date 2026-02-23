@@ -46,6 +46,8 @@ npm install --include=dev
 # 4. Apply Database Migrations
 echo "🗄️  Applying database migrations (Prisma)..."
 npx prisma migrate deploy
+echo "⚙️  Generating Prisma Client..."
+npx prisma generate
 
 # 5. Seed Initial Data
 echo "🌱 Seeding database (Creating Admin if missing)..."
