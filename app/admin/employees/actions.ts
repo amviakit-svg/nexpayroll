@@ -33,7 +33,7 @@ export async function createEmployee(formData: FormData) {
                 name, email, passwordHash: hash, role,
                 managerId, pan, dateOfJoining, designation,
                 pfNumber, employeeCode, bankName, accountNumber, ifscCode,
-                department
+                department, requiresPasswordChange: true
             }
         });
     } catch (error) {
@@ -60,7 +60,7 @@ export async function resetPassword(formData: FormData) {
     const newPassword = String(formData.get('newPassword'));
     if (!newPassword) return;
     const hash = await bcrypt.hash(newPassword, 10);
-    await prisma.user.update({ where: { id }, data: { passwordHash: hash } });
+    await prisma.user.update({ where: { id }, data: { passwordHash: hash, requiresPasswordChange: true } });
     revalidatePath('/admin/employees');
 }
 
