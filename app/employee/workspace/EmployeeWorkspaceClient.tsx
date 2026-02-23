@@ -67,8 +67,8 @@ export default function EmployeeWorkspaceClient() {
             let valB: any = b[key as keyof T];
 
             if (key === 'fileType') {
-                valA = a.fileType || '';
-                valB = b.fileType || '';
+                valA = (a as any).fileType || '';
+                valB = (b as any).fileType || '';
             }
 
             if (valA < valB) return direction === 'asc' ? -1 : 1;
