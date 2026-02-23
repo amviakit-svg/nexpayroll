@@ -79,7 +79,7 @@ export function getDeploymentCommands() {
         {
             id: 'install',
             label: 'Installing Dependencies',
-            command: 'npm install'
+            command: 'npm install --include=dev'
         },
         {
             id: 'migrate',

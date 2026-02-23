@@ -426,7 +426,7 @@ export async function processLeaveRequest(
   });
 
   if (!request) throw new Error('Leave request not found');
-  if (request.status !== 'PENDING' as any && request.status !== 'APPROVED' as any_BY_MANAGER) {
+  if (request.status !== ('PENDING' as any) && request.status !== ('APPROVED_BY_MANAGER' as any)) {
     throw new Error('Can only process PENDING or APPROVED_BY_MANAGER leave requests');
   }
 
