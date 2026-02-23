@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="mx-auto flex min-h-screen w-full max-w-7xl gap-6 p-4 md:p-6">
       <AdminSidebar appName={toolName} />
 
-      <main className="flex-1 space-y-6">
+      <main className="flex-1 min-w-0 space-y-6">
         <header className="panel flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-slate-100 bg-white shadow-sm rounded-2xl">
           <div>
             <p className="text-[10px] uppercase tracking-[0.2em] text-blue-400">Current Session</p>
