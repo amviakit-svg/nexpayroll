@@ -26,54 +26,72 @@ export async function POST(req: NextRequest) {
   const results = [];
   const errors = [];
 
-  for (const emp of employees) {
+  for (const row of employees) {
     try {
-      if (!emp.email || !emp.name) {
-        errors.push({ email: emp.email || 'unknown', error: 'Missing name or email' });
+      const name = row['Full Name*'];
+      const email = row['Email Address*'];
+      const password = row['Initial Password*'] || 'password123';
+      const role = row['System Role'] === 'ADMIN' ? 'ADMIN' : 'EMPLOYEE';
+      const managerEmail = row['Reporting Manager Email'];
+
+      if (!email || !name) {
+        errors.push({ email: email || 'unknown', error: 'Missing name or email' });
         continue;
       }
 
-      const defaultPassword = 'password123';
-      const hash = await bcrypt.hash(defaultPassword, 10);
+      const hash = await bcrypt.hash(password, 10);
 
-      const role = emp.role === 'ADMIN' ? 'ADMIN' : 'EMPLOYEE';
+      // Manager Lookup by Email
+      let managerId = null;
+      if (managerEmail) {
+        const manager = await prisma.user.findFirst({
+          where: { email: { equals: managerEmail, mode: 'insensitive' } }
+        });
+        if (manager) managerId = manager.id;
+      }
+
+      // Find existing user (case-insensitive) to get correct ID for upsert/update
+      const existingUser = await prisma.user.findFirst({
+        where: { email: { equals: email, mode: 'insensitive' } }
+      });
 
       await prisma.user.upsert({
-        where: { email: emp.email },
+        where: { email: existingUser?.email || email },
         update: {
-          name: emp.name,
+          name,
           role,
-          pan: emp.pan || null,
-          designation: emp.designation || null,
-          pfNumber: emp.pfNumber || null,
-          employeeCode: emp.employeeCode || null,
-          bankName: emp.bankName || null,
-          accountNumber: emp.accountNumber || null,
-          ifscCode: emp.ifscCode || null,
-          department: emp.department || null,
-          dateOfJoining: emp.dateOfJoining ? new Date(emp.dateOfJoining) : null,
-          // managerId logic: If manager email provided, look it up? Too complex for now.
+          managerId,
+          pan: String(row['PAN Card'] || '') || null,
+          designation: String(row['Designation'] || '') || null,
+          pfNumber: String(row['PF Number'] || '') || null,
+          employeeCode: String(row['Employee Code'] || '') || null,
+          bankName: String(row['Bank Name'] || '') || null,
+          accountNumber: String(row['Account No'] || '') || null,
+          ifscCode: String(row['IFSC Code'] || '') || null,
+          department: String(row['Client / Dept'] || '') || null,
+          dateOfJoining: row['Join Date'] ? new Date(row['Join Date']) : null,
         },
         create: {
-          email: emp.email,
-          name: emp.name,
+          email,
+          name,
           passwordHash: hash,
           role,
-          pan: emp.pan || null,
-          designation: emp.designation || null,
-          pfNumber: emp.pfNumber || null,
-          employeeCode: emp.employeeCode || null,
-          bankName: emp.bankName || null,
-          accountNumber: emp.accountNumber || null,
-          ifscCode: emp.ifscCode || null,
-          department: emp.department || null,
-          dateOfJoining: emp.dateOfJoining ? new Date(emp.dateOfJoining) : null,
+          managerId,
+          pan: String(row['PAN Card'] || '') || null,
+          designation: String(row['Designation'] || '') || null,
+          pfNumber: String(row['PF Number'] || '') || null,
+          employeeCode: String(row['Employee Code'] || '') || null,
+          bankName: String(row['Bank Name'] || '') || null,
+          accountNumber: String(row['Account No'] || '') || null,
+          ifscCode: String(row['IFSC Code'] || '') || null,
+          department: String(row['Client / Dept'] || '') || null,
+          dateOfJoining: row['Join Date'] ? new Date(row['Join Date']) : null,
         }
       });
-      results.push({ email: emp.email, status: 'success' });
+      results.push({ email, status: 'success' });
     } catch (e) {
       console.error(e);
-      errors.push({ email: emp.email, error: (e as Error).message });
+      errors.push({ email: row['Email Address*'] || 'unknown', error: (e as Error).message });
     }
   }
 

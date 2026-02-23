@@ -35,22 +35,47 @@ export default function PayrollRunner({
   useEffect(() => {
     setPreview(null);
     setError('');
-    if (isLocked) {
-      fetchSubmittedData();
-    } else {
-      setSubmittedData(null);
-    }
+    // Always fetch data to see if we can restore previous entries (for Draft)
+    // or display submitted data (for Locked)
+    fetchPayrollData();
   }, [year, month, isLocked]);
 
-  async function fetchSubmittedData() {
+  async function fetchPayrollData() {
     setLoading(true);
     try {
       const res = await fetch(`/api/admin/payroll/data?year=${year}&month=${month}`);
       const data = await res.json();
-      if (res.ok) setSubmittedData(data);
-      else console.error('Failed to fetch submitted data:', data.error);
+
+      if (res.ok) {
+        setSubmittedData(data);
+
+        // If month is NOT locked, we attempt to populate edit fields from existing DB entries
+        // (Useful when reopening a cycle)
+        if (!isLocked && data.entries) {
+          const newLeaves: Record<string, number> = {};
+          const newAdjustments: VariableMap = {};
+
+          data.entries.forEach((entry: any) => {
+            newLeaves[entry.employeeId] = entry.leaves;
+            newAdjustments[entry.employeeId] = {};
+            entry.lineItems.forEach((item: any) => {
+              if (item.isVariableAdjustment && item.componentId) {
+                newAdjustments[entry.employeeId][item.componentId] = Number(item.amount);
+              }
+            });
+          });
+
+          setLeaves(newLeaves);
+          setVariableAdjustments(newAdjustments);
+        }
+      } else {
+        // Not found or error: Reset states
+        setSubmittedData(null);
+        setLeaves({});
+        setVariableAdjustments({});
+      }
     } catch (err) {
-      console.error('Error fetching submitted data:', err);
+      console.error('Error fetching payroll data:', err);
     } finally {
       setLoading(false);
     }
